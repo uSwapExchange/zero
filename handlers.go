@@ -483,15 +483,15 @@ func handleSwapConfirm(w http.ResponseWriter, r *http.Request) {
 
 	// Encrypt order data into token
 	orderData := &OrderData{
-		DepositAddr: quoteResp.DepositAddress,
-		Memo:        quoteResp.DepositMemo,
+		DepositAddr: quoteResp.Quote.DepositAddress,
+		Memo:        quoteResp.Quote.DepositMemo,
 		FromTicker:  fromTicker,
 		FromNet:     fromNet,
 		ToTicker:    toTicker,
 		ToNet:       toNet,
 		AmountIn:    amountIn,
 		AmountOut:   amountOut,
-		Deadline:    quoteResp.ExpirationTime,
+		Deadline:    quoteResp.Quote.Deadline,
 		CorrID:      quoteResp.CorrelationID,
 	}
 

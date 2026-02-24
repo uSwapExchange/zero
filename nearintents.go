@@ -43,16 +43,24 @@ type QuoteRequest struct {
 }
 
 // QuoteResponse is the response from POST /v0/quote (real, non-dry quote).
+// The API nests quote details inside a "quote" field.
 type QuoteResponse struct {
-	QuoteHash        string `json:"quoteHash"`
-	DepositAddress   string `json:"depositAddress"`
-	DepositMemo      string `json:"depositMemo,omitempty"`
-	AmountIn         string `json:"amountIn"`
-	AmountOut        string `json:"amountOut"`
-	OriginAsset      string `json:"originAsset"`
-	DestinationAsset string `json:"destinationAsset"`
-	ExpirationTime   string `json:"expirationTime"`
-	CorrelationID    string `json:"correlationId"`
+	CorrelationID string      `json:"correlationId"`
+	Timestamp     string      `json:"timestamp"`
+	Signature     string      `json:"signature"`
+	Quote         QuoteDetail `json:"quote"`
+}
+
+// QuoteDetail contains the swap parameters inside a QuoteResponse.
+type QuoteDetail struct {
+	DepositAddress string `json:"depositAddress"`
+	DepositMemo    string `json:"depositMemo,omitempty"`
+	AmountIn       string `json:"amountIn"`
+	AmountInFmt    string `json:"amountInFormatted"`
+	AmountOut      string `json:"amountOut"`
+	AmountOutFmt   string `json:"amountOutFormatted"`
+	Deadline       string `json:"deadline,omitempty"`
+	TimeEstimate   int    `json:"timeEstimate"`
 }
 
 // DryQuoteResponse is the response from POST /v0/quote with dry=true.
@@ -73,18 +81,30 @@ type DryQuoteResponse struct {
 
 // StatusResponse is the response from GET /v0/status
 type StatusResponse struct {
-	Status           string `json:"status"`
-	DepositAddress   string `json:"depositAddress"`
-	AmountIn         string `json:"amountIn,omitempty"`
-	AmountOut        string `json:"amountOut,omitempty"`
-	OriginAsset      string `json:"originAsset,omitempty"`
-	DestinationAsset string `json:"destinationAsset,omitempty"`
-	CorrelationID    string `json:"correlationId,omitempty"`
-	DestTxHashes     []string `json:"destTxHashes,omitempty"`
-	RefundTxHashes   []string `json:"refundTxHashes,omitempty"`
-	Reason           string `json:"reason,omitempty"`
+	CorrelationID string       `json:"correlationId"`
+	Status        string       `json:"status"`
+	UpdatedAt     string       `json:"updatedAt,omitempty"`
+	SwapDetails   *SwapDetails `json:"swapDetails,omitempty"`
 	// Keep raw JSON for the /raw endpoint
-	RawJSON          json.RawMessage `json:"-"`
+	RawJSON json.RawMessage `json:"-"`
+}
+
+// SwapDetails contains the execution details of a swap.
+type SwapDetails struct {
+	AmountIn        string              `json:"amountIn,omitempty"`
+	AmountInFmt     string              `json:"amountInFormatted,omitempty"`
+	AmountOut       string              `json:"amountOut,omitempty"`
+	AmountOutFmt    string              `json:"amountOutFormatted,omitempty"`
+	OriginTxs       []TransactionDetail `json:"originChainTxHashes,omitempty"`
+	DestTxs         []TransactionDetail `json:"destinationChainTxHashes,omitempty"`
+	RefundedAmount  string              `json:"refundedAmount,omitempty"`
+	RefundReason    string              `json:"refundReason,omitempty"`
+}
+
+// TransactionDetail is a tx hash with an explorer link.
+type TransactionDetail struct {
+	Hash        string `json:"hash"`
+	ExplorerURL string `json:"explorerUrl"`
 }
 
 // TokenInfo represents a single token from the /v0/tokens endpoint.

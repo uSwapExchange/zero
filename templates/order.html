@@ -23,9 +23,9 @@
     <div class="completion-card__icon">&#10003;</div>
     <h2 class="completion-card__title">Swap Complete</h2>
     <p class="completion-card__sub">{{.Order.AmountIn}} {{.Order.FromTicker}} &rarr; {{.Order.AmountOut}} {{.Order.ToTicker}}</p>
-    {{range .Status.DestTxHashes}}
-    <a href="#" class="completion-card__link">View Transaction &rarr;</a>
-    {{end}}
+    {{if .Status.SwapDetails}}{{range .Status.SwapDetails.DestTxs}}
+    <a href="{{.ExplorerURL}}" target="_blank" rel="noopener" class="completion-card__link">View Transaction &rarr;</a>
+    {{end}}{{end}}
   </div>
 
   {{else if or (eq .Status.Status "REFUNDED") (eq .Status.Status "FAILED") (eq .Status.Status "INCOMPLETE_DEPOSIT")}}
@@ -35,11 +35,11 @@
       {{if eq .Status.Status "REFUNDED"}}Deposit Refunded{{else if eq .Status.Status "INCOMPLETE_DEPOSIT"}}Incomplete Deposit{{else}}Swap Failed{{end}}
     </h2>
     <p class="refund-card__message">
-      {{if .Status.Reason}}{{.Status.Reason}}{{else}}The swap could not be completed. If you sent funds, they will be returned to your refund address.{{end}}
+      {{if and .Status.SwapDetails .Status.SwapDetails.RefundReason}}{{.Status.SwapDetails.RefundReason}}{{else}}The swap could not be completed. If you sent funds, they will be returned to your refund address.{{end}}
     </p>
-    {{range .Status.RefundTxHashes}}
-    <a href="#" class="completion-card__link mt-8">View Refund Tx &rarr;</a>
-    {{end}}
+    {{if .Status.SwapDetails}}{{range .Status.SwapDetails.OriginTxs}}
+    <a href="{{.ExplorerURL}}" target="_blank" rel="noopener" class="completion-card__link mt-8">View Refund Tx &rarr;</a>
+    {{end}}{{end}}
   </div>
 
   {{else}}

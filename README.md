@@ -2,7 +2,7 @@
 
 Zero-fee, zero-tracking, open-source crypto swap frontend powered by [NEAR Intents](https://near.org/intents).
 
-**Live:** [zero.uswap.net](https://zero.uswap.net) | **TON Mirror:** zero.uswap.ton
+**Live:** [zero.uswap.net](https://zero.uswap.net)
 
 ## What is this?
 
@@ -90,8 +90,7 @@ uswap-zero/
 ├── templates/        # Go html/template files
 ├── static/style.css  # Single stylesheet
 ├── static/icons/     # 30 bundled SVG crypto icons
-├── Dockerfile        # Multi-stage: golang:1.23-alpine -> FROM scratch
-└── deploy/           # TON proxy systemd service
+└── Dockerfile        # Multi-stage: golang:1.23-alpine -> FROM scratch
 ```
 
 ## Routes
@@ -137,12 +136,6 @@ docker build -t uswap-zero .
 ```
 
 Check `nearintents.go` for zero fee markup. Check `handlers.go` for zero logging. Check `go.mod` for zero dependencies.
-
-## TON DNS
-
-uSwap Zero is also available at `zero.uswap.ton` on the TON Network. This domain is an on-chain NFT — it cannot be seized by any registrar or government. Access via Telegram (native `.ton` support) or any TON proxy client.
-
-Both domains serve identical content from the same binary.
 
 ## License
 

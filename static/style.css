@@ -91,7 +91,6 @@ code, pre, .mono {
 .footer-powered { font-size: 0.72rem; opacity: 0.35; margin-bottom: 4px; }
 .footer-powered a { opacity: 0.80; transition: opacity 140ms; }
 .footer-powered a:hover { opacity: 1; }
-.footer-ton { font-size: 0.72rem; opacity: 0.35; margin-bottom: 4px; }
 .footer-license { font-size: 0.68rem; opacity: 0.25; margin-bottom: 4px; }
 .footer-build {
   font-size: 0.65rem;
@@ -1341,39 +1340,6 @@ details.tech-details[open] summary::before { content: '▾ '; }
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Privacy Section
-   ══════════════════════════════════════════════════════════════════ */
-
-.privacy-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.privacy-col h3 {
-  font-size: 0.78rem;
-  font-weight: 600;
-  margin-bottom: 8px;
-  opacity: 0.85;
-}
-.privacy-col ul {
-  list-style: none;
-  padding: 0;
-}
-.privacy-col li {
-  font-size: 0.75rem;
-  opacity: 0.55;
-  line-height: 1.6;
-  padding: 2px 0;
-}
-.privacy-col li::before {
-  margin-right: 6px;
-  font-size: 0.70rem;
-}
-.privacy-col li.pro::before { content: '✓'; color: var(--success); }
-.privacy-col li.con::before { content: '✗'; color: var(--error); }
-
-/* ══════════════════════════════════════════════════════════════════
    Utility
    ══════════════════════════════════════════════════════════════════ */
 
@@ -1442,7 +1408,6 @@ details.tech-details[open] summary::before { content: '▾ '; }
   .stats-grid--wide .stat-card__value { font-size: 1.05rem; }
   .comparison-table { font-size: 0.72rem; }
   .comparison-table th, .comparison-table td { padding: 8px 8px; }
-  .privacy-grid { grid-template-columns: 1fr; }
   .metadata-row { flex-direction: column; gap: 4px; }
   .metadata-row__value { text-align: left; max-width: 100%; }
 }
