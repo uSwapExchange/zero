@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"strings"
@@ -639,10 +640,94 @@ func handleHowItWorks(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "how_it_works.html", newPageData("How It Works"))
 }
 
+// ResellerStats holds formatted display strings for a single reseller.
+type ResellerStats struct {
+	TotalSwaps   string
+	TotalVolume  string
+	TotalRevenue string
+	FirstTx      string
+	DaysActive   int
+	DailyRevenue string
+	UniqueSenders string
+	BiggestUSD   string
+}
+
+// CombinedStats holds formatted combined stats.
+type CombinedStats struct {
+	TotalVolume  string
+	TotalRevenue string
+	TotalSwaps   string
+	UniqueUsers  string
+}
+
+// CaseStudyPageData is the data for the case study page.
+type CaseStudyPageData struct {
+	PageData
+	Eagle    ResellerStats
+	SwapMy   ResellerStats
+	Combined CombinedStats
+}
+
+// caseStudyData is initialized once at startup from the embedded JSON.
+var caseStudyData CaseStudyPageData
+
+// rawAnalysis is the structure matching the JSON file.
+type rawAnalysis struct {
+	EagleSwap rawReseller `json:"EagleSwap"`
+	SwapMy    rawReseller `json:"SwapMy"`
+}
+
+type rawReseller struct {
+	TotalSwaps     int     `json:"total_swaps"`
+	TotalVolumeUSD float64 `json:"total_volume_usd"`
+	TotalRevenueUSD float64 `json:"total_revenue_usd"`
+	UniqueSenders  int     `json:"unique_senders"`
+	FirstTx        string  `json:"first_tx"`
+	DaysActive     int     `json:"days_active"`
+	DailyRevenueUSD float64 `json:"daily_revenue_usd"`
+	BiggestSwapUSD float64 `json:"biggest_swap_usd"`
+}
+
+func formatResellerStats(r rawReseller) ResellerStats {
+	return ResellerStats{
+		TotalSwaps:    formatCommas(int64(r.TotalSwaps)),
+		TotalVolume:   formatUSD(r.TotalVolumeUSD),
+		TotalRevenue:  formatUSD(r.TotalRevenueUSD),
+		FirstTx:       r.FirstTx,
+		DaysActive:    r.DaysActive,
+		DailyRevenue:  formatUSD(r.DailyRevenueUSD),
+		UniqueSenders: formatCommas(int64(r.UniqueSenders)),
+		BiggestUSD:    formatUSD(r.BiggestSwapUSD),
+	}
+}
+
+func initCaseStudy() {
+	var raw rawAnalysis
+	if err := json.Unmarshal(analysisJSON, &raw); err != nil {
+		log.Printf("WARNING: Failed to parse case study data: %v", err)
+		return
+	}
+
+	caseStudyData.Eagle = formatResellerStats(raw.EagleSwap)
+	caseStudyData.SwapMy = formatResellerStats(raw.SwapMy)
+	caseStudyData.Combined = CombinedStats{
+		TotalVolume:  formatUSD(raw.EagleSwap.TotalVolumeUSD + raw.SwapMy.TotalVolumeUSD),
+		TotalRevenue: formatUSD(raw.EagleSwap.TotalRevenueUSD + raw.SwapMy.TotalRevenueUSD),
+		TotalSwaps:   formatCommas(int64(raw.EagleSwap.TotalSwaps + raw.SwapMy.TotalSwaps)),
+		UniqueUsers:  formatCommas(int64(raw.EagleSwap.UniqueSenders + raw.SwapMy.UniqueSenders)),
+	}
+}
+
 // handleCaseStudy renders the competitor analysis page.
 func handleCaseStudy(w http.ResponseWriter, r *http.Request) {
+	data := CaseStudyPageData{
+		PageData: newPageData("The Crypto Swap Reseller Problem"),
+		Eagle:    caseStudyData.Eagle,
+		SwapMy:   caseStudyData.SwapMy,
+		Combined: caseStudyData.Combined,
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	templates.ExecuteTemplate(w, "case_study.html", newPageData("The Crypto Swap Reseller Problem"))
+	templates.ExecuteTemplate(w, "case_study.html", data)
 }
 
 // handleVerify renders the deployment verification page.

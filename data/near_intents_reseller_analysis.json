@@ -1,0 +1,34 @@
+{
+  "EagleSwap": {
+    "url": "eagleswap.to",
+    "affiliate": "Gcj5A3a5mF2BEPm4LujddTit7tTR8pNmUKXkcuzM4dC1",
+    "fee_bps": 30,
+    "total_swaps": 1111,
+    "total_volume_usd": 2168899.75,
+    "total_revenue_usd": 4200.76,
+    "unique_senders": 380,
+    "unique_recipients": 522,
+    "first_tx": "2026-01-15",
+    "last_tx": "2026-02-24",
+    "days_active": 40,
+    "daily_volume_usd": 54222.49,
+    "daily_revenue_usd": 105.02,
+    "biggest_swap_usd": 108351.01
+  },
+  "SwapMy": {
+    "url": "swap.my",
+    "affiliate": "swapmybuddy.near",
+    "fee_bps": 72,
+    "total_swaps": 5152,
+    "total_volume_usd": 3402102.05,
+    "total_revenue_usd": 23979.54,
+    "unique_senders": 1048,
+    "unique_recipients": 2381,
+    "first_tx": "2025-12-01",
+    "last_tx": "2026-02-24",
+    "days_active": 85,
+    "daily_volume_usd": 40024.73,
+    "daily_revenue_usd": 282.11,
+    "biggest_swap_usd": 70685.74
+  }
+}

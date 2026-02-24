@@ -5,6 +5,7 @@ COPY go.mod ./
 COPY *.go ./
 COPY templates/ templates/
 COPY static/ static/
+COPY data/ data/
 
 ARG COMMIT_HASH
 ARG BUILD_TIME

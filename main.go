@@ -25,6 +25,9 @@ var templateFS embed.FS
 //go:embed static/*
 var staticFS embed.FS
 
+//go:embed data/near_intents_reseller_analysis.json
+var analysisJSON []byte
+
 var templates *template.Template
 
 // iconPath returns the URL path for a server-generated token icon.
@@ -113,6 +116,7 @@ func main() {
 	initCrypto()
 	initNearIntents()
 	initTemplates()
+	initCaseStudy()
 	startCacheRefresher()
 	limiter.startCleanup()
 
