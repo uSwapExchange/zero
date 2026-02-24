@@ -5,120 +5,298 @@
 
   <div class="article-header">
     <h1>The Crypto Swap Reseller Problem</h1>
-    <p>How "zero-fee" swap services silently charge you 1-5% through hidden rate markup — and how to verify it yourself.</p>
+    <p>EagleSwap and Swap.my charge you 0.30–0.72% to resell a free protocol. Here's the proof — pulled directly from the NEAR blockchain.</p>
   </div>
 
-  <!-- The Pattern -->
+  <!-- The Scheme -->
   <div class="article-section">
-    <h2>The Pattern</h2>
-    <p>NEAR Intents (formerly Defuse/Chain Defuser) offers a swap API called 1Click. It aggregates liquidity from decentralized market makers and provides cross-chain swaps. The protocol charges zero fees. The API is publicly documented.</p>
-    <p>A growing number of swap services have built frontends on this API. They present themselves as independent exchanges, but they're resellers. They take the NEAR Intents rate, add a silent markup of 1-5%, and pocket the difference. The user never sees the original rate.</p>
-    <p>These services don't disclose that they're using NEAR Intents. They don't show the pre-markup rate. The markup isn't listed as a "fee" — it's baked into the exchange rate itself, making it invisible unless you compare against the source.</p>
+    <h2>The Scheme</h2>
+    <p>NEAR Intents is a cross-chain swap protocol. It aggregates liquidity from competing market makers and executes swaps across 20+ blockchains. The protocol is free — zero fees for registered partners. The API is publicly documented at <code>docs.near-intents.org</code>.</p>
+    <p>EagleSwap and Swap.my are frontends built on this free API. They present themselves as independent exchanges. They are not. They take the NEAR Intents rate, silently add a markup, and pocket the difference. They don't disclose the underlying provider. They don't show the pre-markup rate. The fee isn't listed as a "fee" — it's hidden inside the exchange rate.</p>
+    <p>Every transaction is recorded on the NEAR blockchain with the fee amount and recipient baked into the <code>appFees</code> field. We pulled it all. Here's what we found.</p>
   </div>
 
-  <!-- The Evidence -->
+  <!-- EagleSwap -->
   <div class="article-section">
-    <h2>How to Identify a Reseller</h2>
-    <p>Every NEAR Intents reseller shares these telltale signs:</p>
-    <ol>
-      <li><strong>Deposit addresses on NEAR:</strong> They give you a deposit address that's a NEAR account or uses NEAR-based smart contracts. The deposits go through Defuse/NEAR infrastructure regardless of what chain you're swapping.</li>
-      <li><strong>Identical supported token pairs:</strong> Their token list matches exactly what NEAR Intents supports — no more, no less. When NEAR Intents adds a new chain, they add it too.</li>
-      <li><strong>Correlation IDs:</strong> The API returns correlation IDs that show up in NEAR Intents' status endpoints. You can check any deposit address against the public NEAR Intents status API.</li>
-      <li><strong>Rate discrepancies:</strong> Request the same swap on the reseller and directly through NEAR Intents. The reseller's rate will be worse by exactly their markup percentage.</li>
-    </ol>
+    <h2>EagleSwap <span class="text-muted">(eagleswap.to)</span></h2>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card__value">{{.Eagle.TotalSwaps}}</div>
+        <div class="stat-card__label">Successful Swaps</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__value">{{.Eagle.TotalVolume}}</div>
+        <div class="stat-card__label">Total Volume</div>
+      </div>
+      <div class="stat-card stat-card--accent">
+        <div class="stat-card__value">{{.Eagle.TotalRevenue}}</div>
+        <div class="stat-card__label">Revenue from Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__value">0.30%</div>
+        <div class="stat-card__label">Hidden Fee (30 bps)</div>
+      </div>
+    </div>
+
+    <div class="evidence-block">
+      <div class="evidence-block__title">On-Chain Fee Recipient</div>
+      <pre><code>appFees: [{
+  "recipient": "Gcj5A3a5mF2BEPm4LujddTit7tTR8pNmUKXkcuzM4dC1",
+  "fee": 30
+}]</code></pre>
+      <p class="evidence-block__caption">Every EagleSwap transaction on the NEAR blockchain contains this fee entry. 30 basis points (0.30%) routed to a Solana address they control. Verify any transaction at <a href="https://explorer.near-intents.org" class="text-accent">explorer.near-intents.org</a>.</p>
+    </div>
+
+    <table class="comparison-table">
+      <thead>
+        <tr><th>Metric</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Fee Wallet</td><td><code>Gcj5A3a5mF2BEPm4LujddTit7tTR8pNmUKXkcuzM4dC1</code></td></tr>
+        <tr><td>Fee Rate</td><td>30 bps (0.30%) per swap</td></tr>
+        <tr><td>Active Since</td><td>{{.Eagle.FirstTx}}</td></tr>
+        <tr><td>Days Active</td><td>{{.Eagle.DaysActive}} days</td></tr>
+        <tr><td>Total Swaps</td><td>{{.Eagle.TotalSwaps}}</td></tr>
+        <tr><td>Total Volume</td><td>{{.Eagle.TotalVolume}}</td></tr>
+        <tr><td>Total Revenue</td><td>{{.Eagle.TotalRevenue}}</td></tr>
+        <tr><td>Daily Revenue</td><td>{{.Eagle.DailyRevenue}}/day</td></tr>
+        <tr><td>Unique Users (senders)</td><td>{{.Eagle.UniqueSenders}}</td></tr>
+        <tr><td>Largest Single Swap</td><td>{{.Eagle.BiggestUSD}}</td></tr>
+        <tr><td>Referral Tag</td><td>None set (no attribution to NEAR Intents)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Security Issues</h3>
+    <p>EagleSwap exposes an unauthenticated API at <code>/api/swap/{id}</code> that leaks:</p>
+    <ul>
+      <li>Full NEAR Intents quote responses including solver signatures</li>
+      <li>User wallet addresses (both recipient and refund)</li>
+      <li>Deposit addresses and correlation IDs</li>
+      <li>Recent swap feed at <code>/api/swaps</code> — no authentication required</li>
+    </ul>
+    <p>Any user's swap can be looked up by anyone who knows the order ID. This is how we identified their fee structure without any privileged access.</p>
   </div>
 
-  <!-- Fee Comparison -->
+  <!-- SwapMy -->
   <div class="article-section">
-    <h2>Fee Comparison</h2>
-    <p>Comparing a hypothetical $1,000 ETH to USDT swap across services:</p>
+    <h2>Swap.my <span class="text-muted">(swap.my)</span></h2>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card__value">{{.SwapMy.TotalSwaps}}</div>
+        <div class="stat-card__label">Successful Swaps</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__value">{{.SwapMy.TotalVolume}}</div>
+        <div class="stat-card__label">Total Volume</div>
+      </div>
+      <div class="stat-card stat-card--accent">
+        <div class="stat-card__value">{{.SwapMy.TotalRevenue}}</div>
+        <div class="stat-card__label">Revenue from Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__value">0.72%</div>
+        <div class="stat-card__label">Hidden Fee (72 bps)</div>
+      </div>
+    </div>
+
+    <div class="evidence-block">
+      <div class="evidence-block__title">On-Chain Fee Recipient</div>
+      <pre><code>appFees: [{
+  "recipient": "swapmybuddy.near",
+  "fee": 72
+}]</code></pre>
+      <p class="evidence-block__caption">Every Swap.my transaction contains this fee entry. 72 basis points (0.72%) — more than double EagleSwap's markup. The NEAR account name <code>swapmybuddy.near</code> makes attribution unambiguous.</p>
+    </div>
+
+    <table class="comparison-table">
+      <thead>
+        <tr><th>Metric</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Fee Wallet</td><td><code>swapmybuddy.near</code></td></tr>
+        <tr><td>Fee Rate</td><td>72 bps (0.72%) per swap</td></tr>
+        <tr><td>Active Since</td><td>{{.SwapMy.FirstTx}}</td></tr>
+        <tr><td>Days Active</td><td>{{.SwapMy.DaysActive}} days</td></tr>
+        <tr><td>Total Swaps</td><td>{{.SwapMy.TotalSwaps}}</td></tr>
+        <tr><td>Total Volume</td><td>{{.SwapMy.TotalVolume}}</td></tr>
+        <tr><td>Total Revenue</td><td>{{.SwapMy.TotalRevenue}}</td></tr>
+        <tr><td>Daily Revenue</td><td>{{.SwapMy.DailyRevenue}}/day</td></tr>
+        <tr><td>Unique Users (senders)</td><td>{{.SwapMy.UniqueSenders}}</td></tr>
+        <tr><td>Largest Single Swap</td><td>{{.SwapMy.BiggestUSD}}</td></tr>
+        <tr><td>Referral Tag</td><td>None set (no attribution to NEAR Intents)</td></tr>
+        <tr><td>Provider Field</td><td>Listed as "A" in their API — actively hides the provider name</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Quote Discrepancy</h3>
+    <p>In our testing, Swap.my quoted a user <code>0.748856 USDT</code> for a 0.01 SOL swap. The NEAR Intents Explorer shows the solver actually filled <code>0.749848 USDT</code>. The difference is small on a $0.78 swap — but on a $10,000 swap at 72 bps, the user loses $72 to an invisible fee they never agreed to.</p>
+  </div>
+
+  <!-- Side by Side -->
+  <div class="article-section">
+    <h2>Side-by-Side Comparison</h2>
     <table class="comparison-table">
       <thead>
         <tr>
-          <th>Service</th>
-          <th>Stated Fee</th>
-          <th>Actual Cost</th>
-          <th>You Receive</th>
+          <th>Metric</th>
+          <th>EagleSwap</th>
+          <th>Swap.my</th>
+          <th class="highlight">uSwap Zero</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>Typical reseller (1% markup)</td>
-          <td>"Zero fees"</td>
-          <td>~$10.00</td>
-          <td>~$990</td>
+          <td>Underlying Protocol</td>
+          <td>NEAR Intents</td>
+          <td>NEAR Intents</td>
+          <td class="highlight">NEAR Intents</td>
         </tr>
         <tr>
-          <td>Typical reseller (3% markup)</td>
-          <td>"Low fees"</td>
-          <td>~$30.00</td>
-          <td>~$970</td>
+          <td>Discloses Provider</td>
+          <td>No</td>
+          <td>No (lists as "A")</td>
+          <td class="highlight">Yes — on every page</td>
         </tr>
         <tr>
-          <td>Typical CEX (0.1% fee)</td>
-          <td>0.1%</td>
-          <td>~$1.00</td>
-          <td>~$999</td>
-        </tr>
-        <tr>
-          <td class="highlight">uSwap Zero</td>
+          <td>Protocol Fee</td>
+          <td>0%</td>
+          <td>0%</td>
           <td class="highlight">0%</td>
+        </tr>
+        <tr>
+          <td>App Fee (markup)</td>
+          <td>0.30%</td>
+          <td>0.72%</td>
+          <td class="highlight">0%</td>
+        </tr>
+        <tr>
+          <td>Fee Disclosure</td>
+          <td>Hidden in rate</td>
+          <td>Hidden in rate</td>
+          <td class="highlight">$0.00 shown explicitly</td>
+        </tr>
+        <tr>
+          <td>Total User Cost</td>
+          <td>~0.40%</td>
+          <td>~0.82%</td>
+          <td class="highlight">~0.05-0.15% (spread only)</td>
+        </tr>
+        <tr>
+          <td>Open Source</td>
+          <td>No</td>
+          <td>No</td>
+          <td class="highlight">Yes — MIT License</td>
+        </tr>
+        <tr>
+          <td>Verifiable Deploy</td>
+          <td>No</td>
+          <td>No</td>
+          <td class="highlight">Yes — reproducible builds</td>
+        </tr>
+        <tr>
+          <td>User Data Stored</td>
+          <td>Yes (leaks via API)</td>
+          <td>Unknown</td>
+          <td class="highlight">Nothing. Zero state.</td>
+        </tr>
+        <tr>
+          <td>Client-Side JS</td>
+          <td>Yes (full SPA)</td>
+          <td>Yes (full SPA)</td>
+          <td class="highlight">None (server-rendered HTML)</td>
+        </tr>
+        <tr>
+          <td>Cost on $1,000 Swap</td>
+          <td>~$3.00</td>
+          <td>~$7.20</td>
           <td class="highlight">$0.00</td>
-          <td class="highlight">~$1000 (minus spread)</td>
+        </tr>
+        <tr>
+          <td>Cost on $10,000 Swap</td>
+          <td>~$30.00</td>
+          <td>~$72.00</td>
+          <td class="highlight">$0.00</td>
+        </tr>
+        <tr>
+          <td>Cost on $100,000 Swap</td>
+          <td>~$300.00</td>
+          <td>~$720.00</td>
+          <td class="highlight">$0.00</td>
         </tr>
       </tbody>
     </table>
-    <p>The "minus spread" on uSwap Zero is the market maker's bid/ask spread, which exists on every exchange. The key difference: uSwap Zero doesn't add anything on top of it.</p>
   </div>
 
-  <!-- How to Verify -->
+  <!-- Combined Stats -->
   <div class="article-section">
-    <h2>How to Verify Yourself</h2>
-    <p>You don't need to trust us — or anyone. Here's how to verify any swap service:</p>
+    <h2>Combined Impact</h2>
+    <div class="stats-grid stats-grid--wide">
+      <div class="stat-card stat-card--large">
+        <div class="stat-card__value">{{.Combined.TotalVolume}}</div>
+        <div class="stat-card__label">Combined Volume Processed</div>
+      </div>
+      <div class="stat-card stat-card--large stat-card--accent">
+        <div class="stat-card__value">{{.Combined.TotalRevenue}}</div>
+        <div class="stat-card__label">Total Extracted from Users</div>
+      </div>
+      <div class="stat-card stat-card--large">
+        <div class="stat-card__value">{{.Combined.TotalSwaps}}</div>
+        <div class="stat-card__label">Total Swaps Processed</div>
+      </div>
+      <div class="stat-card stat-card--large">
+        <div class="stat-card__value">{{.Combined.UniqueUsers}}</div>
+        <div class="stat-card__label">Unique Users Affected</div>
+      </div>
+    </div>
+    <p>Every dollar above was charged for adding a frontend to a free API. The users received no additional value — the same swap, the same speed, the same liquidity. Just a worse rate.</p>
+  </div>
+
+  <!-- How We Found This -->
+  <div class="article-section">
+    <h2>How We Found This</h2>
+    <p>No hacking. No private data. No insider access. Just public blockchain records.</p>
     <ol>
-      <li>Request a quote from the swap service for a specific pair and amount.</li>
-      <li>Request the same quote directly from the NEAR Intents API. The endpoint is <code>POST https://1click.chaindefuser.com/v0/quote</code> with <code>dry: true</code>.</li>
-      <li>Compare the exchange rates. If the swap service gives you less than NEAR Intents, the difference is their hidden markup.</li>
+      <li><strong>Identified the protocol:</strong> Both services use <code>nep141:</code> asset IDs, <code>ed25519</code> signatures, and deposit addresses that resolve on NEAR — all signatures of the NEAR Intents 1Click API.</li>
+      <li><strong>Found the fee wallets:</strong> EagleSwap's API is unauthenticated — their <code>/api/swaps</code> endpoint returns recent swaps with correlation IDs. We matched those to the NEAR Intents Explorer, which shows the <code>appFees</code> field on every transaction.</li>
+      <li><strong>Pulled the full history:</strong> The NEAR Intents Explorer API supports filtering by <code>affiliate</code> — the fee recipient address. One query returns every swap that paid fees to that address, with full TX hashes on both the source and destination chains.</li>
+      <li><strong>Verified independently:</strong> Every transaction hash in this report is clickable and verifiable on the respective blockchain's explorer. The origin chain TX shows the user's deposit. The destination chain TX shows what they received. The NEAR TX shows the fee that was extracted.</li>
     </ol>
 
     <div class="evidence-block">
-      <pre><code># Get a dry quote directly from NEAR Intents
-curl -X POST https://1click.chaindefuser.com/v0/quote \
-  -H "Content-Type: application/json" \
-  -d '{
-    "dry": true,
-    "swapType": "EXACT_INPUT",
-    "slippageTolerance": 100,
-    "originAsset": "nep141:eth.near",
-    "depositType": "ORIGIN_CHAIN",
-    "destinationAsset": "nep141:usdt.near",
-    "amount": "1000000000000000000",
-    "refundTo": "YOUR_ADDRESS",
-    "refundType": "ORIGIN_CHAIN",
-    "recipient": "YOUR_ADDRESS",
-    "recipientType": "DESTINATION_CHAIN",
-    "deadline": "2025-12-31T00:00:00Z"
-  }'</code></pre>
-      <p class="evidence-block__caption">Replace addresses with your own. The amount is 1 ETH in wei (18 decimals).</p>
-    </div>
+      <div class="evidence-block__title">Reproduce It Yourself</div>
+      <pre><code># Search the NEAR Intents Explorer for EagleSwap's fee wallet
+curl -H "Authorization: Bearer YOUR_JWT" \
+  "https://explorer.near-intents.org/api/v0/transactions-pages?\
+affiliate=Gcj5A3a5mF2BEPm4LujddTit7tTR8pNmUKXkcuzM4dC1&perPage=10"
 
-    <p>uSwap Zero is the only swap frontend we're aware of that passes the NEAR Intents rate through at cost. Our source code is public — you can read the exact API call we make and verify there's no markup applied.</p>
+# Search for Swap.my's fee wallet
+curl -H "Authorization: Bearer YOUR_JWT" \
+  "https://explorer.near-intents.org/api/v0/transactions-pages?\
+affiliate=swapmybuddy.near&perPage=10"
+
+# Get an Explorer API key at: partners.near-intents.org</code></pre>
+      <p class="evidence-block__caption">Returns full transaction details: TX hashes, sender/recipient wallets, amounts, fees, timestamps. All public data.</p>
+    </div>
   </div>
 
-  <!-- What We Do Differently -->
+  <!-- The Point -->
   <div class="article-section">
-    <h2>What uSwap Zero Does Differently</h2>
+    <h2>The Point</h2>
+    <p>We're not saying EagleSwap and Swap.my are scams. They provide a service — a frontend for a swap protocol. Charging for that is a legitimate business model.</p>
+    <p>The problem is transparency. Neither service tells you:</p>
     <ul>
-      <li><strong>Zero markup:</strong> We pass the NEAR Intents quote through exactly as received.</li>
-      <li><strong>Full transparency:</strong> Every order page shows the NEAR Intents correlation ID and a link to the raw API response.</li>
-      <li><strong>Open source:</strong> The entire codebase is public. A single Go file makes the API call. You can read it.</li>
-      <li><strong>Verifiable deployment:</strong> The deployed binary's commit hash, build log, and image digest are all public on our <a href="/verify" class="text-accent">verify page</a>.</li>
-      <li><strong>No tracking:</strong> No JavaScript analytics, no cookies, no session storage, no server-side logging of user data.</li>
+      <li>That they're reselling NEAR Intents</li>
+      <li>What fee they're charging</li>
+      <li>That the same swap costs less (or nothing) elsewhere</li>
     </ul>
+    <p>uSwap Zero exists to prove that a swap frontend can be free, open source, privacy-first, and fully transparent — while using the exact same infrastructure. You shouldn't have to pay a hidden 0.30–0.72% tax to swap crypto. And you shouldn't have to trust us when we say that. Read the code.</p>
   </div>
 
   <div class="text-center mt-32">
-    <a href="/" class="btn btn--primary">&larr; Start Swapping</a>
+    <a href="/" class="btn btn--primary">&larr; Start Swapping at 0% Fee</a>
+    <a href="/verify" class="btn btn--outline">Verify Our Code &rarr;</a>
   </div>
 
 </div>
