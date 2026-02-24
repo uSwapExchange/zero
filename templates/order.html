@@ -1,0 +1,106 @@
+{{template "head" .}}
+<div class="page-content">
+
+  <!-- Status Stepper -->
+  <div class="stepper">
+    <div class="step {{if eq .StatusStep 0}}step--active{{end}} {{if gt .StatusStep 0}}step--complete{{end}}">
+      <div class="step__dot">{{if gt .StatusStep 0}}&#10003;{{else}}1{{end}}</div>
+      <span class="step__label">Awaiting</span>
+    </div>
+    <div class="step {{if eq .StatusStep 1}}step--active{{end}} {{if gt .StatusStep 1}}step--complete{{end}}">
+      <div class="step__dot">{{if gt .StatusStep 1}}&#10003;{{else}}2{{end}}</div>
+      <span class="step__label">Processing</span>
+    </div>
+    <div class="step {{if eq .StatusStep 2}}step--active{{end}}{{if and (eq .StatusStep 2) (eq .Status.Status "SUCCESS")}} step--complete{{end}}">
+      <div class="step__dot">{{if and (eq .StatusStep 2) (eq .Status.Status "SUCCESS")}}&#10003;{{else}}3{{end}}</div>
+      <span class="step__label">{{if eq .Status.Status "SUCCESS"}}Complete{{else if eq .Status.Status "REFUNDED"}}Refunded{{else if eq .Status.Status "FAILED"}}Failed{{else}}Complete{{end}}</span>
+    </div>
+  </div>
+
+  {{if eq .Status.Status "SUCCESS"}}
+  <!-- Success -->
+  <div class="completion-card">
+    <div class="completion-card__icon">&#10003;</div>
+    <h2 class="completion-card__title">Swap Complete</h2>
+    <p class="completion-card__sub">{{.Order.AmountIn}} {{.Order.FromTicker}} &rarr; {{.Order.AmountOut}} {{.Order.ToTicker}}</p>
+    {{range .Status.DestTxHashes}}
+    <a href="#" class="completion-card__link">View Transaction &rarr;</a>
+    {{end}}
+  </div>
+
+  {{else if or (eq .Status.Status "REFUNDED") (eq .Status.Status "FAILED") (eq .Status.Status "INCOMPLETE_DEPOSIT")}}
+  <!-- Refund / Error -->
+  <div class="refund-card">
+    <h2 class="refund-card__title">
+      {{if eq .Status.Status "REFUNDED"}}Deposit Refunded{{else if eq .Status.Status "INCOMPLETE_DEPOSIT"}}Incomplete Deposit{{else}}Swap Failed{{end}}
+    </h2>
+    <p class="refund-card__message">
+      {{if .Status.Reason}}{{.Status.Reason}}{{else}}The swap could not be completed. If you sent funds, they will be returned to your refund address.{{end}}
+    </p>
+    {{range .Status.RefundTxHashes}}
+    <a href="#" class="completion-card__link mt-8">View Refund Tx &rarr;</a>
+    {{end}}
+  </div>
+
+  {{else}}
+  <!-- Deposit Instructions -->
+  <div class="deposit-card">
+    <h2 class="deposit-card__title">
+      {{if eq .StatusStep 0}}Send exactly:{{else}}Processing your swap...{{end}}
+    </h2>
+
+    {{if eq .StatusStep 0}}
+    <div class="deposit-amount">{{.Order.AmountIn}} {{.Order.FromTicker}}</div>
+
+    <div class="deposit-address-wrap">
+      <div class="deposit-address" id="deposit-addr">{{.Order.DepositAddr}}</div>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('deposit-addr').textContent.trim())">Copy Address</button>
+      <noscript><p class="text-muted" style="font-size:0.72rem;margin-top:4px;">Select the address above and copy manually.</p></noscript>
+    </div>
+
+    {{if .Order.Memo}}
+    <div class="memo-warning">
+      <strong>Memo required:</strong> {{.Order.Memo}}<br>
+      <small>Your deposit will fail without this memo.</small>
+    </div>
+    {{end}}
+
+    <div class="qr-container">
+      {{.QRCode | safeHTML}}
+    </div>
+
+    <div class="deposit-meta">
+      {{if .Order.FromNet}}<span>Network <strong>{{.Order.FromNet}}</strong></span>{{end}}
+      {{if .TimeRemaining}}<span>Deadline <strong class="{{if eq .TimeRemaining "Expired"}}text-error{{end}}">{{.TimeRemaining}}</strong></span>{{end}}
+    </div>
+    {{else}}
+    <p class="text-muted pulse">Waiting for confirmation on the network...</p>
+    {{end}}
+  </div>
+  {{end}}
+
+  <!-- Transparency -->
+  <div class="transparency-card">
+    <div class="transparency-card__title">Transparency</div>
+    {{if .Order.CorrID}}
+    <div class="transparency-row">
+      <span class="transparency-row__label">Correlation ID</span>
+      <span class="transparency-row__value">{{.Order.CorrID}}</span>
+    </div>
+    {{end}}
+    <div class="transparency-row">
+      <span class="transparency-row__label">Status</span>
+      <span class="transparency-row__value">{{.Status.Status}}</span>
+    </div>
+    <div class="transparency-row">
+      <span class="transparency-row__label">Raw API</span>
+      <span class="transparency-row__value"><a href="/order/{{.Token}}/raw">View Raw Response &rarr;</a></span>
+    </div>
+  </div>
+
+  <div class="text-center mt-24">
+    <a href="/" class="btn btn--ghost btn--sm">&larr; New Swap</a>
+  </div>
+
+</div>
+{{template "footer" .}}

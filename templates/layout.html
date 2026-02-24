@@ -1,0 +1,41 @@
+{{define "head"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {{if .MetaRefresh}}<meta http-equiv="refresh" content="{{.MetaRefresh}}">{{end}}
+  <title>{{.Title}} — uSwap Zero</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>:root{--accent:{{.ToColor}};--accent-a:{{.ToColorA}};--amber:{{.FromColor}};--amber-a:{{.FromColorA}}}</style>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+</head>
+<body>
+<div class="page-wrapper">
+{{end}}
+
+{{define "footer"}}
+<footer class="site-footer">
+  <nav class="footer-nav">
+    <a href="/currencies">Currencies</a>
+    <span class="footer-dot">&middot;</span>
+    <a href="/how-it-works">How it Works</a>
+    <span class="footer-dot">&middot;</span>
+    <a href="/case-study">Case Study</a>
+    <span class="footer-dot">&middot;</span>
+    <a href="/verify">Verify</a>
+    <span class="footer-dot">&middot;</span>
+    <a href="/source">Source</a>
+  </nav>
+  <p class="footer-powered">Powered by <a href="https://defuse.org/">NEAR Intents</a> (0% commissions)</p>
+  <p class="footer-ton">Also available at <strong>zero.uswap.ton</strong></p>
+  <p class="footer-license">Open source. MIT License.</p>
+  {{if and .CommitHash (ne .CommitHash "development") (ne .CommitHash "unknown") (ne .CommitHash "")}}
+  <p class="footer-build"><a href="https://github.com/uSwapExchange/uswap-zero/commit/{{.CommitHash}}">{{slice .CommitHash 0 7}}</a>{{if and .BuildTime (ne .BuildTime "unknown")}} &middot; {{.BuildTime}}{{end}}</p>
+  {{end}}
+</footer>
+</div>
+</body>
+</html>
+{{end}}

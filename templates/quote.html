@@ -1,0 +1,93 @@
+{{template "head" .}}
+<div class="page-content">
+
+  <a href="/" class="back-link">&larr; Back</a>
+
+  <div class="quote-flow">
+    <!-- YOU SEND -->
+    <div class="quote-card quote-card--send">
+      <div class="quote-card__label">You Send</div>
+      <div class="quote-card__row">
+        <img src="{{iconPath .FromTicker}}" alt="" class="currency-pill__icon">
+        <div class="quote-card__info">
+          <div class="quote-card__amount">{{.AmountIn}} {{.FromTicker}}</div>
+          {{if .AmountInUSD}}<div class="quote-card__usd">{{.AmountInUSD}}</div>{{end}}
+        </div>
+      </div>
+    </div>
+
+    <div class="quote-arrow">&#8595;</div>
+
+    <!-- YOU RECEIVE -->
+    <div class="quote-card quote-card--receive">
+      <div class="quote-card__label">You Receive (estimated)</div>
+      <div class="quote-card__row">
+        <img src="{{iconPath .ToTicker}}" alt="" class="currency-pill__icon">
+        <div class="quote-card__info">
+          <div class="quote-card__amount">{{.AmountOut}} {{.ToTicker}}</div>
+          {{if .AmountOutUSD}}<div class="quote-card__usd">{{.AmountOutUSD}}</div>{{end}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{if .Rate}}<div class="quote-rate">{{.Rate}}</div>{{end}}
+
+  <!-- Fee Breakdown -->
+  <div class="fee-card">
+    <div class="fee-card__title">Fee Breakdown</div>
+    <div class="fee-row">
+      <span class="fee-row__label">uSwap Zero fee</span>
+      <span class="fee-row__value fee-row__value--free"><span class="fee-zero">Ø</span> &#10003;</span>
+    </div>
+    <div class="fee-row">
+      <span class="fee-row__label">Protocol fee</span>
+      {{if .HasJWT}}<span class="fee-row__value fee-row__value--free"><span class="fee-zero">Ø</span> &#10003;</span>{{else}}<span class="fee-row__value">Standard rate</span>{{end}}
+    </div>
+    <div class="fee-row">
+      <span class="fee-row__label">Market maker spread</span>
+      <span class="fee-row__value">{{if .SpreadUSD}}~{{.SpreadUSD}} ({{.SpreadPct}}){{else}}—{{end}}</span>
+    </div>
+    <div class="fee-row fee-row--total">
+      <span class="fee-row__label">Total fees charged</span>
+      {{if .HasJWT}}<span class="fee-row__value fee-row__value--free"><span class="fee-zero">Ø</span></span>{{else}}<span class="fee-row__value fee-row__value--free"><span class="fee-zero">Ø</span> (uSwap Zero)</span>{{end}}
+    </div>
+    <p class="fee-note">The spread is not a fee — it's the difference between spot price and the market maker's offered rate. uSwap Zero adds zero markup and charges zero fees.{{if not .HasJWT}} Protocol fees may apply at the standard NEAR Intents rate.{{end}}</p>
+  </div>
+
+  <!-- Technical Details -->
+  <details class="tech-details">
+    <summary>Technical Details</summary>
+    <div class="tech-content">
+      <div class="tech-row"><span class="tech-key">Origin asset:</span> <span>{{.OriginAsset}}</span></div>
+      <div class="tech-row"><span class="tech-key">Dest asset:</span> <span>{{.DestAsset}}</span></div>
+      <div class="tech-row"><span class="tech-key">Amount (atomic):</span> <span>{{.AtomicAmount}}</span></div>
+      <div class="tech-row"><span class="tech-key">Slippage:</span> <span>{{.SlippageBPS}} bps ({{.Slippage}}%)</span></div>
+      <div class="tech-row"><span class="tech-key">Deadline:</span> <span>{{.Deadline}}</span></div>
+      <div class="tech-row"><span class="tech-key">Recipient:</span> <span>{{.Recipient}}</span></div>
+      <div class="tech-row"><span class="tech-key">Refund to:</span> <span>{{.RefundAddr}}</span></div>
+    </div>
+  </details>
+
+  <!-- Confirm Form -->
+  <form method="POST" action="/swap">
+    <input type="hidden" name="csrf" value="{{.CSRFToken}}">
+    <input type="hidden" name="from" value="{{.From}}">
+    <input type="hidden" name="from_net" value="{{.FromNet}}">
+    <input type="hidden" name="to" value="{{.To}}">
+    <input type="hidden" name="to_net" value="{{.ToNet}}">
+    <input type="hidden" name="atomic_amount" value="{{.AtomicAmount}}">
+    <input type="hidden" name="amount_in" value="{{.AmountIn}}">
+    <input type="hidden" name="amount_out" value="{{.AmountOut}}">
+    <input type="hidden" name="recipient" value="{{.Recipient}}">
+    <input type="hidden" name="refund_addr" value="{{.RefundAddr}}">
+    <input type="hidden" name="slippage_bps" value="{{.SlippageBPS}}">
+    <input type="hidden" name="deadline" value="{{.Deadline}}">
+    <div class="btn-row">
+      <a href="/" class="btn btn--ghost">&#8592; Go Back</a>
+      <button type="submit" class="btn btn--primary">Confirm Swap &rarr;</button>
+    </div>
+  </form>
+
+</div>
+{{template "footer" .}}

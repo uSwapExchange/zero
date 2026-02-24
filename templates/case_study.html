@@ -1,0 +1,125 @@
+{{template "head" .}}
+<div class="page-content page-content--wide">
+
+  <a href="/" class="back-link">&larr; Start Swapping</a>
+
+  <div class="article-header">
+    <h1>The Crypto Swap Reseller Problem</h1>
+    <p>How "zero-fee" swap services silently charge you 1-5% through hidden rate markup — and how to verify it yourself.</p>
+  </div>
+
+  <!-- The Pattern -->
+  <div class="article-section">
+    <h2>The Pattern</h2>
+    <p>NEAR Intents (formerly Defuse/Chain Defuser) offers a swap API called 1Click. It aggregates liquidity from decentralized market makers and provides cross-chain swaps. The protocol charges zero fees. The API is publicly documented.</p>
+    <p>A growing number of swap services have built frontends on this API. They present themselves as independent exchanges, but they're resellers. They take the NEAR Intents rate, add a silent markup of 1-5%, and pocket the difference. The user never sees the original rate.</p>
+    <p>These services don't disclose that they're using NEAR Intents. They don't show the pre-markup rate. The markup isn't listed as a "fee" — it's baked into the exchange rate itself, making it invisible unless you compare against the source.</p>
+  </div>
+
+  <!-- The Evidence -->
+  <div class="article-section">
+    <h2>How to Identify a Reseller</h2>
+    <p>Every NEAR Intents reseller shares these telltale signs:</p>
+    <ol>
+      <li><strong>Deposit addresses on NEAR:</strong> They give you a deposit address that's a NEAR account or uses NEAR-based smart contracts. The deposits go through Defuse/NEAR infrastructure regardless of what chain you're swapping.</li>
+      <li><strong>Identical supported token pairs:</strong> Their token list matches exactly what NEAR Intents supports — no more, no less. When NEAR Intents adds a new chain, they add it too.</li>
+      <li><strong>Correlation IDs:</strong> The API returns correlation IDs that show up in NEAR Intents' status endpoints. You can check any deposit address against the public NEAR Intents status API.</li>
+      <li><strong>Rate discrepancies:</strong> Request the same swap on the reseller and directly through NEAR Intents. The reseller's rate will be worse by exactly their markup percentage.</li>
+    </ol>
+  </div>
+
+  <!-- Fee Comparison -->
+  <div class="article-section">
+    <h2>Fee Comparison</h2>
+    <p>Comparing a hypothetical $1,000 ETH to USDT swap across services:</p>
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Stated Fee</th>
+          <th>Actual Cost</th>
+          <th>You Receive</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Typical reseller (1% markup)</td>
+          <td>"Zero fees"</td>
+          <td>~$10.00</td>
+          <td>~$990</td>
+        </tr>
+        <tr>
+          <td>Typical reseller (3% markup)</td>
+          <td>"Low fees"</td>
+          <td>~$30.00</td>
+          <td>~$970</td>
+        </tr>
+        <tr>
+          <td>Typical CEX (0.1% fee)</td>
+          <td>0.1%</td>
+          <td>~$1.00</td>
+          <td>~$999</td>
+        </tr>
+        <tr>
+          <td class="highlight">uSwap Zero</td>
+          <td class="highlight">0%</td>
+          <td class="highlight">$0.00</td>
+          <td class="highlight">~$1000 (minus spread)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The "minus spread" on uSwap Zero is the market maker's bid/ask spread, which exists on every exchange. The key difference: uSwap Zero doesn't add anything on top of it.</p>
+  </div>
+
+  <!-- How to Verify -->
+  <div class="article-section">
+    <h2>How to Verify Yourself</h2>
+    <p>You don't need to trust us — or anyone. Here's how to verify any swap service:</p>
+    <ol>
+      <li>Request a quote from the swap service for a specific pair and amount.</li>
+      <li>Request the same quote directly from the NEAR Intents API. The endpoint is <code>POST https://1click.chaindefuser.com/v0/quote</code> with <code>dry: true</code>.</li>
+      <li>Compare the exchange rates. If the swap service gives you less than NEAR Intents, the difference is their hidden markup.</li>
+    </ol>
+
+    <div class="evidence-block">
+      <pre><code># Get a dry quote directly from NEAR Intents
+curl -X POST https://1click.chaindefuser.com/v0/quote \
+  -H "Content-Type: application/json" \
+  -d '{
+    "dry": true,
+    "swapType": "EXACT_INPUT",
+    "slippageTolerance": 100,
+    "originAsset": "nep141:eth.near",
+    "depositType": "ORIGIN_CHAIN",
+    "destinationAsset": "nep141:usdt.near",
+    "amount": "1000000000000000000",
+    "refundTo": "YOUR_ADDRESS",
+    "refundType": "ORIGIN_CHAIN",
+    "recipient": "YOUR_ADDRESS",
+    "recipientType": "DESTINATION_CHAIN",
+    "deadline": "2025-12-31T00:00:00Z"
+  }'</code></pre>
+      <p class="evidence-block__caption">Replace addresses with your own. The amount is 1 ETH in wei (18 decimals).</p>
+    </div>
+
+    <p>uSwap Zero is the only swap frontend we're aware of that passes the NEAR Intents rate through at cost. Our source code is public — you can read the exact API call we make and verify there's no markup applied.</p>
+  </div>
+
+  <!-- What We Do Differently -->
+  <div class="article-section">
+    <h2>What uSwap Zero Does Differently</h2>
+    <ul>
+      <li><strong>Zero markup:</strong> We pass the NEAR Intents quote through exactly as received.</li>
+      <li><strong>Full transparency:</strong> Every order page shows the NEAR Intents correlation ID and a link to the raw API response.</li>
+      <li><strong>Open source:</strong> The entire codebase is public. A single Go file makes the API call. You can read it.</li>
+      <li><strong>Verifiable deployment:</strong> The deployed binary's commit hash, build log, and image digest are all public on our <a href="/verify" class="text-accent">verify page</a>.</li>
+      <li><strong>No tracking:</strong> No JavaScript analytics, no cookies, no session storage, no server-side logging of user data.</li>
+    </ul>
+  </div>
+
+  <div class="text-center mt-32">
+    <a href="/" class="btn btn--primary">&larr; Start Swapping</a>
+  </div>
+
+</div>
+{{template "footer" .}}

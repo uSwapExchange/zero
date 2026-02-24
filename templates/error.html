@@ -1,0 +1,12 @@
+{{template "head" .}}
+<div class="page-content">
+  <div class="error-page">
+    <div class="glass-card error-card">
+      <div class="error-icon">⚠</div>
+      <h1 class="error-title">{{.Title}}</h1>
+      <p class="error-message">{{.Message}}</p>
+      {{if .ActionURL}}<a href="{{.ActionURL}}" class="btn btn--primary">{{.Action}}</a>{{end}}
+    </div>
+  </div>
+</div>
+{{template "footer" .}}

@@ -1,0 +1,39 @@
+{{template "head" .}}
+<div class="page-content page-content--full">
+
+  <a href="/" class="back-link">&larr; Start Swapping</a>
+
+  <div class="currencies-header">
+    <h1>Supported Currencies</h1>
+    <p>{{.TotalCount}} tokens across {{len .Networks}} networks — all via NEAR Intents.</p>
+  </div>
+
+  <div class="currencies-search">
+    <form method="get" action="/currencies" class="modal-search-form">
+      <input type="text" name="search" value="{{.Search}}" placeholder="Search by name, ticker, or network..." class="modal-search-input" autofocus>
+      <button type="submit" class="modal-search-btn">Search</button>
+      {{if .Search}}<a href="/currencies" class="btn btn--ghost btn--sm">Clear</a>{{end}}
+    </form>
+  </div>
+
+  {{range .Networks}}
+  <details class="network-section" open>
+    <summary>{{.Name}} <span class="network-count">({{len .Tokens}})</span></summary>
+    <div class="token-grid">
+      {{range .Tokens}}
+      <a href="/?from={{.Ticker | upper}}&amp;from_net={{.ChainName | lower}}" class="token-card">
+        <img src="{{iconPath .Ticker}}" alt="" class="token-card__icon">
+        <span class="token-card__ticker">{{.Ticker | upper}}</span>
+        {{if gt .Price 0.0}}<span class="token-card__price">{{formatUSD .Price}}</span>{{end}}
+      </a>
+      {{end}}
+    </div>
+  </details>
+  {{end}}
+
+  {{if not .Networks}}
+  <p class="text-center text-muted mt-24">No tokens found for "{{.Search}}".</p>
+  {{end}}
+
+</div>
+{{template "footer" .}}

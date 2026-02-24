@@ -1,0 +1,138 @@
+{{template "head" .}}
+<div class="page-content">
+
+  <div class="hero">
+    <img src="/static/logo.png" alt="uSwap Zero" class="hero-logo">
+  </div>
+
+  <form method="POST" action="/quote">
+    <input type="hidden" name="csrf" value="{{.CSRFToken}}">
+    <input type="hidden" name="from" value="{{.From}}">
+    <input type="hidden" name="from_net" value="{{.FromNet}}">
+    <input type="hidden" name="to" value="{{.To}}">
+    <input type="hidden" name="to_net" value="{{.ToNet}}">
+
+    <div class="swap-section">
+      <!-- FROM -->
+      <div class="swap-card swap-card--from">
+        <div class="swap-card__label">You Send</div>
+        <div class="swap-card__row">
+          <a href="/?modal=from&amp;from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;slippage={{.Slippage}}&amp;deadline={{.Deadline}}&amp;recipient={{.Recipient}}" class="currency-pill">
+            <img src="{{iconPath .From}}" alt="" class="currency-pill__icon">
+            <span class="currency-pill__ticker">{{.From}}</span>
+            <span class="currency-pill__arrow">&#9660;</span>
+          </a>
+          <div class="swap-card__amount">
+            <input type="text" name="amount" value="{{.Amount}}" placeholder="0.00" class="amount-input" inputmode="decimal" autocomplete="off" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div class="swap-arrow">
+        <div class="swap-arrow__icon">&#8693;</div>
+      </div>
+
+      <!-- TO -->
+      <div class="swap-card swap-card--to">
+        <div class="swap-card__label">You Receive</div>
+        <div class="swap-card__row">
+          <a href="/?modal=to&amp;from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;slippage={{.Slippage}}&amp;deadline={{.Deadline}}&amp;recipient={{.Recipient}}" class="currency-pill">
+            <img src="{{iconPath .To}}" alt="" class="currency-pill__icon">
+            <span class="currency-pill__ticker">{{.To}}</span>
+            <span class="currency-pill__arrow">&#9660;</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Addresses -->
+    <div class="form-section">
+      <div class="form-group">
+        <label class="form-label">Recipient Address</label>
+        <input type="text" name="recipient" value="{{.Recipient}}" placeholder="Where to send {{.To}}" class="form-input form-input--mono" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Refund Address <span class="form-label__hint">({{.From}} on {{.FromNet}})</span></label>
+        <input type="text" name="refund_addr" value="{{.RefundAddr}}" placeholder="Your {{.From}} address for refunds" class="form-input form-input--mono" required>
+      </div>
+    </div>
+
+    <!-- Slippage + Deadline -->
+    <div class="option-row mb-24">
+      <div class="option-group">
+        <label class="form-label"><span class="tooltip-trigger">Slippage <span class="tooltip-icon">?</span><span class="tooltip-content">Maximum price change you'll accept. Higher slippage = more likely to fill, but worse rate if the market moves.</span></span></label>
+        <div class="pill-group">
+          <input type="radio" name="slippage" value="0.5" id="slip-05" class="pill-radio" {{if eq .Slippage "0.5"}}checked{{end}}>
+          <label for="slip-05" class="pill-label">0.5%</label>
+          <input type="radio" name="slippage" value="1" id="slip-1" class="pill-radio" {{if eq .Slippage "1"}}checked{{end}}>
+          <label for="slip-1" class="pill-label">1%</label>
+          <input type="radio" name="slippage" value="2" id="slip-2" class="pill-radio" {{if eq .Slippage "2"}}checked{{end}}>
+          <label for="slip-2" class="pill-label">2%</label>
+          <input type="radio" name="slippage" value="3" id="slip-3" class="pill-radio" {{if eq .Slippage "3"}}checked{{end}}>
+          <label for="slip-3" class="pill-label">3%</label>
+        </div>
+      </div>
+      <div class="option-group">
+        <label class="form-label"><span class="tooltip-trigger">Deadline <span class="tooltip-icon">?</span><span class="tooltip-content">Time window to complete the swap. If the deposit isn't received before the deadline, it will be refunded to your refund address.</span></span></label>
+        <select name="deadline" class="form-select">
+          <option value="30m" {{if eq .Deadline "30m"}}selected{{end}}>30 min</option>
+          <option value="1h" {{if eq .Deadline "1h"}}selected{{end}}>1 hour</option>
+          <option value="2h" {{if eq .Deadline "2h"}}selected{{end}}>2 hours</option>
+          <option value="4h" {{if eq .Deadline "4h"}}selected{{end}}>4 hours</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn--primary btn--block">Get Quote &rarr;</button>
+  </form>
+
+</div>
+
+{{/* ── Currency Modal ── */}}
+{{if .ModalOpen}}
+<div class="modal-overlay">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <span class="modal-title">Select {{if eq .ModalOpen "from"}}Source{{else}}Destination{{end}} Currency</span>
+      <a href="/?from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;slippage={{.Slippage}}&amp;deadline={{.Deadline}}&amp;recipient={{.Recipient}}" class="modal-close">&times;</a>
+    </div>
+    <div class="modal-search">
+      <form method="get" action="/" class="modal-search-form">
+        <input type="hidden" name="modal" value="{{.ModalOpen}}">
+        <input type="hidden" name="from" value="{{.From}}">
+        <input type="hidden" name="from_net" value="{{.FromNet}}">
+        <input type="hidden" name="to" value="{{.To}}">
+        <input type="hidden" name="to_net" value="{{.ToNet}}">
+        <input type="hidden" name="amt" value="{{.Amount}}">
+        <input type="hidden" name="slippage" value="{{.Slippage}}">
+        <input type="hidden" name="deadline" value="{{.Deadline}}">
+        <input type="hidden" name="recipient" value="{{.Recipient}}">
+        <input type="text" name="{{if eq .ModalOpen "from"}}search_from{{else}}search_to{{end}}" value="{{if eq .ModalOpen "from"}}{{.SearchFrom}}{{else}}{{.SearchTo}}{{end}}" placeholder="Search tokens..." class="modal-search-input" autofocus>
+        <button type="submit" class="modal-search-btn">Search</button>
+      </form>
+    </div>
+    <div class="modal-body">
+      {{range .Networks}}
+      <details class="network-section"{{if eq .Name "Ethereum"}} open{{end}}>
+        <summary>{{.Name}} <span class="network-count">({{len .Tokens}})</span></summary>
+        <div class="token-grid">
+          {{range .Tokens}}
+          <a href="/?{{if eq $.ModalOpen "from"}}from={{.Ticker | upper}}&amp;from_net={{.ChainName | lower}}&amp;to={{$.To}}&amp;to_net={{$.ToNet}}{{else}}from={{$.From}}&amp;from_net={{$.FromNet}}&amp;to={{.Ticker | upper}}&amp;to_net={{.ChainName | lower}}{{end}}&amp;amt={{$.Amount}}&amp;slippage={{$.Slippage}}&amp;deadline={{$.Deadline}}&amp;recipient={{$.Recipient}}" class="token-card">
+            <img src="{{iconPath .Ticker}}" alt="" class="token-card__icon">
+            <span class="token-card__ticker">{{.Ticker | upper}}</span>
+            {{if gt .Price 0.0}}<span class="token-card__price">{{formatUSD .Price}}</span>{{end}}
+          </a>
+          {{end}}
+        </div>
+      </details>
+      {{end}}
+      {{if not .Networks}}
+      <p class="text-center text-muted mt-24">No tokens found.</p>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}
+
+{{template "footer" .}}
