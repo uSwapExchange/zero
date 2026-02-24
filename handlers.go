@@ -91,7 +91,6 @@ type SwapPageData struct {
 	Recipient  string
 	RefundAddr string
 	Slippage   string
-	Deadline   string
 	CSRFToken  string
 	Networks   []NetworkGroup
 	SearchFrom string
@@ -119,7 +118,6 @@ type QuotePageData struct {
 	RefundAddr      string
 	Slippage        string
 	SlippageBPS     int
-	Deadline        string
 	CSRFToken       string
 	OriginAsset     string
 	DestAsset       string
@@ -195,7 +193,6 @@ func handleSwap(w http.ResponseWriter, r *http.Request) {
 		Amount:     r.URL.Query().Get("amt"),
 		Recipient:  r.URL.Query().Get("recipient"),
 		Slippage:   r.URL.Query().Get("slippage"),
-		Deadline:   r.URL.Query().Get("deadline"),
 		CSRFToken:  generateCSRFToken("quote"),
 		Networks:   networks,
 		SearchFrom: r.URL.Query().Get("search_from"),
@@ -214,9 +211,6 @@ func handleSwap(w http.ResponseWriter, r *http.Request) {
 	}
 	if data.Slippage == "" {
 		data.Slippage = "1"
-	}
-	if data.Deadline == "" {
-		data.Deadline = "1h"
 	}
 
 	// Set accent colors from selected currencies
@@ -271,7 +265,6 @@ func handleQuote(w http.ResponseWriter, r *http.Request) {
 	recipient := strings.TrimSpace(r.FormValue("recipient"))
 	refundAddr := strings.TrimSpace(r.FormValue("refund_addr"))
 	slippage := r.FormValue("slippage")
-	deadline := r.FormValue("deadline")
 
 	// Validation
 	var errors []string
@@ -309,8 +302,6 @@ func handleQuote(w http.ResponseWriter, r *http.Request) {
 		slippageBPS = 100 // default 1%
 	}
 
-	deadlineDuration := parseDeadlineOption(deadline)
-
 	// Request dry quote from NEAR Intents
 	quoteReq := &QuoteRequest{
 		Dry:                true,
@@ -324,7 +315,7 @@ func handleQuote(w http.ResponseWriter, r *http.Request) {
 		RefundType:         "ORIGIN_CHAIN",
 		Recipient:          recipient,
 		RecipientType:      "DESTINATION_CHAIN",
-		Deadline:           buildDeadline(deadlineDuration),
+		Deadline:           buildDeadline(time.Hour),
 		Referral:           "uswap-zero",
 		QuoteWaitingTimeMs: 8000,
 		AppFees:            []struct{}{},
@@ -393,7 +384,6 @@ func handleQuote(w http.ResponseWriter, r *http.Request) {
 		RefundAddr:   refundAddr,
 		Slippage:     slippage,
 		SlippageBPS:  slippageBPS,
-		Deadline:     deadline,
 		CSRFToken:    generateCSRFToken("swap"),
 		OriginAsset:  fromToken.DefuseAssetID,
 		DestAsset:    toToken.DefuseAssetID,
@@ -440,7 +430,6 @@ func handleSwapConfirm(w http.ResponseWriter, r *http.Request) {
 	recipient := r.FormValue("recipient")
 	refundAddr := r.FormValue("refund_addr")
 	slippageBPS := r.FormValue("slippage_bps")
-	deadline := r.FormValue("deadline")
 	amountIn := r.FormValue("amount_in")
 	amountOut := r.FormValue("amount_out")
 
@@ -453,8 +442,6 @@ func handleSwapConfirm(w http.ResponseWriter, r *http.Request) {
 
 	bps := 100
 	fmt.Sscanf(slippageBPS, "%d", &bps)
-
-	deadlineDuration := parseDeadlineOption(deadline)
 
 	// Real quote (not dry)
 	quoteReq := &QuoteRequest{
@@ -469,7 +456,7 @@ func handleSwapConfirm(w http.ResponseWriter, r *http.Request) {
 		RefundType:         "ORIGIN_CHAIN",
 		Recipient:          recipient,
 		RecipientType:      "DESTINATION_CHAIN",
-		Deadline:           buildDeadline(deadlineDuration),
+		Deadline:           buildDeadline(time.Hour),
 		Referral:           "uswap-zero",
 		QuoteWaitingTimeMs: 3000,
 		AppFees:            []struct{}{},

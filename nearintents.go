@@ -234,18 +234,3 @@ func buildDeadline(d time.Duration) string {
 	return time.Now().UTC().Add(d).Format(time.RFC3339)
 }
 
-// parseDuration parses deadline strings like "30m", "1h", "2h", "4h".
-func parseDeadlineOption(opt string) time.Duration {
-	switch opt {
-	case "30m":
-		return 30 * time.Minute
-	case "1h":
-		return 1 * time.Hour
-	case "2h":
-		return 2 * time.Hour
-	case "4h":
-		return 4 * time.Hour
-	default:
-		return 1 * time.Hour
-	}
-}

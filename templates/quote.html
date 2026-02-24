@@ -63,7 +63,6 @@
       <div class="tech-row"><span class="tech-key">Dest asset:</span> <span>{{.DestAsset}}</span></div>
       <div class="tech-row"><span class="tech-key">Amount (atomic):</span> <span>{{.AtomicAmount}}</span></div>
       <div class="tech-row"><span class="tech-key">Slippage:</span> <span>{{.SlippageBPS}} bps ({{.Slippage}}%)</span></div>
-      <div class="tech-row"><span class="tech-key">Deadline:</span> <span>{{.Deadline}}</span></div>
       <div class="tech-row"><span class="tech-key">Recipient:</span> <span>{{.Recipient}}</span></div>
       <div class="tech-row"><span class="tech-key">Refund to:</span> <span>{{.RefundAddr}}</span></div>
     </div>
@@ -82,7 +81,6 @@
     <input type="hidden" name="recipient" value="{{.Recipient}}">
     <input type="hidden" name="refund_addr" value="{{.RefundAddr}}">
     <input type="hidden" name="slippage_bps" value="{{.SlippageBPS}}">
-    <input type="hidden" name="deadline" value="{{.Deadline}}">
     <div class="btn-row">
       <a href="/" class="btn btn--ghost">&#8592; Go Back</a>
       <button type="submit" class="btn btn--primary">Confirm Swap &rarr;</button>

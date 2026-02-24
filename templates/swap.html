@@ -17,7 +17,7 @@
       <div class="swap-card swap-card--from">
         <div class="swap-card__label">You Send</div>
         <div class="swap-card__row">
-          <a href="/?modal=from&amp;from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;slippage={{.Slippage}}&amp;deadline={{.Deadline}}&amp;recipient={{.Recipient}}" class="currency-pill">
+          <a href="/?modal=from&amp;from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;slippage={{.Slippage}}&amp;recipient={{.Recipient}}" class="currency-pill">
             <img src="{{iconPath .From}}" alt="" class="currency-pill__icon">
             <span class="currency-pill__ticker">{{.From}}</span>
             <span class="currency-pill__arrow">&#9660;</span>
@@ -37,7 +37,7 @@
       <div class="swap-card swap-card--to">
         <div class="swap-card__label">You Receive</div>
         <div class="swap-card__row">
-          <a href="/?modal=to&amp;from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;slippage={{.Slippage}}&amp;deadline={{.Deadline}}&amp;recipient={{.Recipient}}" class="currency-pill">
+          <a href="/?modal=to&amp;from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;slippage={{.Slippage}}&amp;recipient={{.Recipient}}" class="currency-pill">
             <img src="{{iconPath .To}}" alt="" class="currency-pill__icon">
             <span class="currency-pill__ticker">{{.To}}</span>
             <span class="currency-pill__arrow">&#9660;</span>
@@ -58,7 +58,7 @@
       </div>
     </div>
 
-    <!-- Slippage + Deadline -->
+    <!-- Slippage -->
     <div class="option-row mb-24">
       <div class="option-group">
         <label class="form-label"><span class="tooltip-trigger">Slippage <span class="tooltip-icon">?</span><span class="tooltip-content">Maximum price change you'll accept. Higher slippage = more likely to fill, but worse rate if the market moves.</span></span></label>
@@ -73,15 +73,6 @@
           <label for="slip-3" class="pill-label">3%</label>
         </div>
       </div>
-      <div class="option-group">
-        <label class="form-label"><span class="tooltip-trigger">Deadline <span class="tooltip-icon">?</span><span class="tooltip-content">Time window to complete the swap. If the deposit isn't received before the deadline, it will be refunded to your refund address.</span></span></label>
-        <select name="deadline" class="form-select">
-          <option value="30m" {{if eq .Deadline "30m"}}selected{{end}}>30 min</option>
-          <option value="1h" {{if eq .Deadline "1h"}}selected{{end}}>1 hour</option>
-          <option value="2h" {{if eq .Deadline "2h"}}selected{{end}}>2 hours</option>
-          <option value="4h" {{if eq .Deadline "4h"}}selected{{end}}>4 hours</option>
-        </select>
-      </div>
     </div>
 
     <button type="submit" class="btn btn--primary btn--block">Get Quote &rarr;</button>
@@ -95,7 +86,7 @@
   <div class="modal-panel">
     <div class="modal-header">
       <span class="modal-title">Select {{if eq .ModalOpen "from"}}Source{{else}}Destination{{end}} Currency</span>
-      <a href="/?from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;slippage={{.Slippage}}&amp;deadline={{.Deadline}}&amp;recipient={{.Recipient}}" class="modal-close">&times;</a>
+      <a href="/?from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;slippage={{.Slippage}}&amp;recipient={{.Recipient}}" class="modal-close">&times;</a>
     </div>
     <div class="modal-search">
       <form method="get" action="/" class="modal-search-form">
@@ -106,7 +97,6 @@
         <input type="hidden" name="to_net" value="{{.ToNet}}">
         <input type="hidden" name="amt" value="{{.Amount}}">
         <input type="hidden" name="slippage" value="{{.Slippage}}">
-        <input type="hidden" name="deadline" value="{{.Deadline}}">
         <input type="hidden" name="recipient" value="{{.Recipient}}">
         <input type="text" name="{{if eq .ModalOpen "from"}}search_from{{else}}search_to{{end}}" value="{{if eq .ModalOpen "from"}}{{.SearchFrom}}{{else}}{{.SearchTo}}{{end}}" placeholder="Search tokens..." class="modal-search-input" autofocus>
         <button type="submit" class="modal-search-btn">Search</button>
@@ -118,7 +108,7 @@
         <summary>{{.Name}} <span class="network-count">({{len .Tokens}})</span></summary>
         <div class="token-grid">
           {{range .Tokens}}
-          <a href="/?{{if eq $.ModalOpen "from"}}from={{.Ticker | upper}}&amp;from_net={{.ChainName | lower}}&amp;to={{$.To}}&amp;to_net={{$.ToNet}}{{else}}from={{$.From}}&amp;from_net={{$.FromNet}}&amp;to={{.Ticker | upper}}&amp;to_net={{.ChainName | lower}}{{end}}&amp;amt={{$.Amount}}&amp;slippage={{$.Slippage}}&amp;deadline={{$.Deadline}}&amp;recipient={{$.Recipient}}" class="token-card">
+          <a href="/?{{if eq $.ModalOpen "from"}}from={{.Ticker | upper}}&amp;from_net={{.ChainName | lower}}&amp;to={{$.To}}&amp;to_net={{$.ToNet}}{{else}}from={{$.From}}&amp;from_net={{$.FromNet}}&amp;to={{.Ticker | upper}}&amp;to_net={{.ChainName | lower}}{{end}}&amp;amt={{$.Amount}}&amp;slippage={{$.Slippage}}&amp;recipient={{$.Recipient}}" class="token-card">
             <img src="{{iconPath .Ticker}}" alt="" class="token-card__icon">
             <span class="token-card__ticker">{{.Ticker | upper}}</span>
             {{if gt .Price 0.0}}<span class="token-card__price">{{formatUSD .Price}}</span>{{end}}

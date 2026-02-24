@@ -488,7 +488,6 @@ func TestSwapPageHandler(t *testing.T) {
 		"Get Quote",
 		"csrf",
 		"Slippage",
-		"Deadline",
 		"tooltip-trigger",
 		"logo.png",
 	}
@@ -911,28 +910,8 @@ func TestFeeDisplayWithoutJWT(t *testing.T) {
 }
 
 // ════════════════════════════════════════════════════════════
-// Deadline and Helper Tests
+// Helper Tests
 // ════════════════════════════════════════════════════════════
-
-func TestParseDeadlineOption(t *testing.T) {
-	tests := []struct {
-		opt  string
-		want time.Duration
-	}{
-		{"30m", 30 * time.Minute},
-		{"1h", time.Hour},
-		{"2h", 2 * time.Hour},
-		{"4h", 4 * time.Hour},
-		{"invalid", time.Hour}, // default
-	}
-
-	for _, tt := range tests {
-		got := parseDeadlineOption(tt.opt)
-		if got != tt.want {
-			t.Errorf("parseDeadlineOption(%q) = %v, want %v", tt.opt, got, tt.want)
-		}
-	}
-}
 
 func TestBuildDeadline(t *testing.T) {
 	dl := buildDeadline(time.Hour)
