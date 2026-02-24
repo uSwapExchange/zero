@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| Commit | [b4fa657aef308732cf25b3e708b4b5672f3bccc3](https://github.com/uSwapExchange/uswap-zero/commit/b4fa657aef308732cf25b3e708b4b5672f3bccc3) |
-| Build Time | 2026-02-24T16:27:58-07:00 |
-| Image | `ghcr.io/uswapexchange/uswap-zero:b4fa657aef308732cf25b3e708b4b5672f3bccc3` |
-| Image Digest | `sha256:5f2689053cd66fd070d806e7832d190c0187659de12f846dbec89d5d2026e87e` |
-| CI Build Log | [View](https://github.com/uSwapExchange/uswap-zero/actions/runs/22374630538) |
+| Commit | [5d94c43a18e2380e31a8abfafbfbaeb7fcf7d959](https://github.com/uSwapExchange/uswap-zero/commit/5d94c43a18e2380e31a8abfafbfbaeb7fcf7d959) |
+| Build Time | 2026-02-24T16:39:47-07:00 |
+| Image | `ghcr.io/uswapexchange/uswap-zero:5d94c43a18e2380e31a8abfafbfbaeb7fcf7d959` |
+| Image Digest | `sha256:34949d95393196255f41b30104ae6e16ad00fd518d6d14cec2b7dc7938129f91` |
+| CI Build Log | [View](https://github.com/uSwapExchange/uswap-zero/actions/runs/22374970825) |
 | go.mod Hash | `aa4f413ceb41c7825e0b7a7b768c0e11b5b374d0f13cbacb633ec4e4d6cf8fb2` |
 
 ---
