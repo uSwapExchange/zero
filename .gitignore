@@ -1,6 +1,9 @@
 zero
 zero.exe
 zero.exe~
+uswap-zero
+uswap-zero.exe
+*.exe
 *~
 .env
 .env.*
