@@ -1,6 +1,5 @@
 {{template "head" .}}
 <div class="page-content page-content--wide">
-  <meta http-equiv="refresh" content="60">
 
   <a href="/" class="back-link">&larr; Start Swapping</a>
 
@@ -38,10 +37,12 @@
         <option value="{{.Name}}" {{if eq $.FilterReseller .Name}}selected{{end}}>{{.Name}}</option>
         {{end}}
       </select>
+      <input type="hidden" name="sort" value="{{.SortBy}}">
+      <input type="hidden" name="dir" value="{{.SortDir}}">
       <button type="submit" class="btn btn--primary">Filter</button>
-      {{if or .Query .FilterReseller}}<a href="/wrapper-logs" class="btn">Clear</a>{{end}}
+      {{if or .Query .FilterReseller}}<a href="/wrapper-logs?sort={{.SortBy}}&dir={{.SortDir}}" class="btn">Clear</a>{{end}}
     </form>
-    <p class="text-muted" style="font-size:0.82rem;">Showing {{.Count}} entries (newest first). Auto-refreshes every 60s.</p>
+    <p class="text-muted" style="font-size:0.82rem;">Showing {{.Count}} entries. Sorted by {{if eq .SortBy "fee"}}fee{{else}}date{{end}} {{if eq .SortDir "desc"}}(highest first){{else}}(lowest first){{end}}. Auto-refreshes every 60s.</p>
   </div>
 
   <!-- Log Table -->
@@ -53,8 +54,8 @@
           <th>Reseller</th>
           <th>Sent</th>
           <th>Received</th>
-          <th>Fee Taken</th>
-          <th>Time (UTC)</th>
+          <th><a href="{{.SortFeeURL}}" style="color:inherit;text-decoration:none;">Fee Taken{{sortIndicator .SortBy "fee" .SortDir}}</a></th>
+          <th><a href="{{.SortDateURL}}" style="color:inherit;text-decoration:none;">Time (UTC){{sortIndicator .SortBy "date" .SortDir}}</a></th>
           <th>NEAR TX</th>
         </tr>
       </thead>

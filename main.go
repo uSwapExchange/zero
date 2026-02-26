@@ -109,6 +109,7 @@ func initTemplates() {
 			}
 			return addr[:8] + "..." + addr[len(addr)-6:]
 		},
+		"sortIndicator": sortIndicator,
 	}
 
 	var err error

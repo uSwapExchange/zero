@@ -65,7 +65,7 @@ func renderSwapCard(sess *tgSession) (string, *TGInlineKeyboardMarkup) {
 
 	// Live counter line — only shown when monitor is running
 	if total := monitorTotalFeeUSD(); total > 0 {
-		sb.WriteString("Don't be a part of the " + formatUSD(total) + " taken.\n\n")
+		sb.WriteString("Don't be a part of the " + formatUSD(total) + " lost to @APIWrappers\n\n")
 	}
 
 	sb.WriteString("<pre>" + renderSwapCardMono(sess) + "</pre>")

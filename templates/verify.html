@@ -94,7 +94,7 @@ ORDER_SECRET=$(openssl rand -hex 32) ./zero</code></pre>
   <!-- What to Audit -->
   <div class="audit-section">
     <h2>WHAT TO AUDIT</h2>
-    <p class="text-muted mb-16" style="font-size:0.82rem;">The entire application is ~4000 lines of Go across 15 files — web UI and Telegram bot combined. Zero external dependencies. Here's what to look for:</p>
+    <p class="text-muted mb-16" style="font-size:0.82rem;">The entire application is ~6700 lines of Go across 20 files — web UI, Telegram bot, and reseller monitor combined. Zero external dependencies. Here's what to look for:</p>
 
     <div class="audit-item">
       <a href="https://github.com/uSwapExchange/zero/blob/main/nearintents.go" class="audit-item__file">nearintents.go</a>
@@ -110,11 +110,11 @@ ORDER_SECRET=$(openssl rand -hex 32) ./zero</code></pre>
     </div>
     <div class="audit-item">
       <a href="https://github.com/uSwapExchange/zero/blob/main/main.go" class="audit-item__file">main.go</a>
-      <span class="audit-item__desc">No middleware that logs requests. No analytics. No external service calls except NEAR Intents API.</span>
+      <span class="audit-item__desc">No middleware that logs requests. No analytics. External calls: NEAR Intents swap API and NEAR Intents Explorer API (reseller monitor only).</span>
     </div>
     <div class="audit-item">
       <a href="https://github.com/uSwapExchange/zero/blob/main/tokencache.go" class="audit-item__file">tokencache.go</a>
-      <span class="audit-item__desc">The only in-memory state: a cached copy of the public token list. Refreshed every 5 minutes. No user data.</span>
+      <span class="audit-item__desc">Cached copy of the public token list. Refreshed every 5 minutes. No user data.</span>
     </div>
     <div class="audit-item">
       <a href="https://github.com/uSwapExchange/zero/tree/main/templates" class="audit-item__file">templates/</a>
@@ -139,6 +139,22 @@ ORDER_SECRET=$(openssl rand -hex 32) ./zero</code></pre>
     <div class="audit-item">
       <a href="https://github.com/uSwapExchange/zero/blob/main/tgsession.go" class="audit-item__file">tgsession.go</a>
       <span class="audit-item__desc">Telegram session state lives in memory only, scoped to the bot process. Nothing is persisted between restarts. No database, no file writes.</span>
+    </div>
+    <div class="audit-item">
+      <a href="https://github.com/uSwapExchange/zero/blob/main/explorer.go" class="audit-item__file">explorer.go</a>
+      <span class="audit-item__desc">Read-only client for the NEAR Intents Explorer API. Fetches public on-chain fee data for Swap.my, LizardSwap, and EagleSwap. No user data — only affiliate fee transactions from the public ledger.</span>
+    </div>
+    <div class="audit-item">
+      <a href="https://github.com/uSwapExchange/zero/blob/main/monitor.go" class="audit-item__file">monitor.go</a>
+      <span class="audit-item__desc">Reseller monitor: polls Explorer API, maintains a 2000-entry in-memory ring buffer of fee transactions, and persists only a pagination cursor to disk. No user swap data is stored anywhere.</span>
+    </div>
+    <div class="audit-item">
+      <a href="https://github.com/uSwapExchange/zero/blob/main/tgmonitor.go" class="audit-item__file">tgmonitor.go</a>
+      <span class="audit-item__desc">Posts double-border monospace fee cards to Telegram forum threads. Updates thread titles and channel description with running totals. No user data sent — only public on-chain fee amounts.</span>
+    </div>
+    <div class="audit-item">
+      <a href="https://github.com/uSwapExchange/zero/blob/main/wrapperpage.go" class="audit-item__file">wrapperpage.go</a>
+      <span class="audit-item__desc">/wrapper-logs handler. Snapshots the in-memory ring buffer and renders it as a searchable HTML table. No database, no disk reads — data comes entirely from the live ring buffer.</span>
     </div>
   </div>
 

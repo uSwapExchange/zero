@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+	"net/url"
+	"sort"
 	"strings"
 	"time"
 )
@@ -14,8 +16,13 @@ type WrapperLogsPageData struct {
 	Resellers      []WrapperResellerStat
 	Query          string
 	FilterReseller string
+	SortBy         string
+	SortDir        string
 	Count          int
 	MonitorActive  bool
+	// Pre-built sort toggle URLs for column headers
+	SortFeeURL  string
+	SortDateURL string
 }
 
 // WrapperResellerStat holds display stats for one reseller.
@@ -46,6 +53,15 @@ type WrapperLogRow struct {
 func handleWrapperLogs(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	filterReseller := r.URL.Query().Get("reseller")
+	sortBy := r.URL.Query().Get("sort")   // "fee" or "date"
+	sortDir := r.URL.Query().Get("dir")   // "asc" or "desc"
+
+	if sortBy != "fee" && sortBy != "date" {
+		sortBy = "date"
+	}
+	if sortDir != "asc" && sortDir != "desc" {
+		sortDir = "desc"
+	}
 
 	// Build filter function
 	filter := func(e LogEntry) bool {
@@ -76,6 +92,20 @@ func handleWrapperLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	entries := monitorLogBuf.snapshot(500, filter)
+
+	// Sort entries server-side
+	sort.SliceStable(entries, func(i, j int) bool {
+		var less bool
+		if sortBy == "fee" {
+			less = entries[i].FeeUSD < entries[j].FeeUSD
+		} else {
+			less = entries[i].Tx.CreatedAtTimestamp < entries[j].Tx.CreatedAtTimestamp
+		}
+		if sortDir == "desc" {
+			return !less
+		}
+		return less
+	})
 
 	var rows []WrapperLogRow
 	for _, e := range entries {
@@ -109,11 +139,11 @@ func handleWrapperLogs(w http.ResponseWriter, r *http.Request) {
 
 	// Build per-reseller stats
 	var resellerStats []WrapperResellerStat
-	for _, r := range monitorResellers {
-		if s, ok := monitorStats[r.Affiliate]; ok {
+	for _, res := range monitorResellers {
+		if s, ok := monitorStats[res.Affiliate]; ok {
 			fee, vol, swaps := s.snapshot()
 			resellerStats = append(resellerStats, WrapperResellerStat{
-				Name:      r.Name,
+				Name:      res.Name,
 				FeeUSD:    formatUSD(fee),
 				VolumeUSD: formatUSD(vol),
 				Swaps:     formatCommas(int64(swaps)),
@@ -121,19 +151,59 @@ func handleWrapperLogs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Build sort toggle URLs — clicking a sorted column reverses direction
+	sortFeeURL := sortToggleURL(query, filterReseller, "fee", sortBy, sortDir)
+	sortDateURL := sortToggleURL(query, filterReseller, "date", sortBy, sortDir)
+
+	pd := newPageData("Wrapper Logs")
+	pd.MetaRefresh = 60
 	data := WrapperLogsPageData{
-		PageData:       newPageData("Wrapper Logs"),
+		PageData:       pd,
 		Entries:        rows,
 		TotalFeeUSD:    formatUSD(monitorTotalFeeUSD()),
 		Resellers:      resellerStats,
 		Query:          query,
 		FilterReseller: filterReseller,
+		SortBy:         sortBy,
+		SortDir:        sortDir,
 		Count:          len(rows),
 		MonitorActive:  monitorEnabled,
+		SortFeeURL:     sortFeeURL,
+		SortDateURL:    sortDateURL,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	templates.ExecuteTemplate(w, "wrapper_logs.html", data)
+}
+
+// sortToggleURL builds a /wrapper-logs URL that toggles the sort direction
+// for the given column, preserving existing query and reseller filter params.
+func sortToggleURL(query, filterReseller, column, currentSort, currentDir string) string {
+	dir := "desc"
+	if currentSort == column && currentDir == "desc" {
+		dir = "asc"
+	}
+	params := url.Values{}
+	if query != "" {
+		params.Set("q", query)
+	}
+	if filterReseller != "" {
+		params.Set("reseller", filterReseller)
+	}
+	params.Set("sort", column)
+	params.Set("dir", dir)
+	return "/wrapper-logs?" + params.Encode()
+}
+
+// sortIndicator returns an arrow for active sort columns.
+func sortIndicator(sortBy, column, sortDir string) string {
+	if sortBy != column {
+		return ""
+	}
+	if sortDir == "asc" {
+		return " ↑"
+	}
+	return " ↓"
 }
 
 func formatLogTime(ts int64) string {
@@ -142,3 +212,4 @@ func formatLogTime(ts int64) string {
 	}
 	return time.Unix(ts, 0).UTC().Format("02 Jan 2006 15:04z")
 }
+
