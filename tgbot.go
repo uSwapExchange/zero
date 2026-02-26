@@ -167,11 +167,16 @@ func tgRequest(method string, payload interface{}) (json.RawMessage, error) {
 }
 
 // tgSendMessage sends a text message with optional reply markup.
+// Link previews are always disabled — the bot sends informational cards,
+// not content where previews add value.
 func tgSendMessage(chatID int64, text string, markup interface{}) (*TGSentMessage, error) {
 	payload := map[string]interface{}{
 		"chat_id":    chatID,
 		"text":       text,
 		"parse_mode": "HTML",
+		"link_preview_options": map[string]interface{}{
+			"is_disabled": true,
+		},
 	}
 	if markup != nil {
 		payload["reply_markup"] = markup
@@ -186,12 +191,16 @@ func tgSendMessage(chatID int64, text string, markup interface{}) (*TGSentMessag
 }
 
 // tgEditMessage edits an existing message's text and markup.
+// Link previews are always disabled.
 func tgEditMessage(chatID int64, messageID int, text string, markup *TGInlineKeyboardMarkup) error {
 	payload := map[string]interface{}{
 		"chat_id":    chatID,
 		"message_id": messageID,
 		"text":       text,
 		"parse_mode": "HTML",
+		"link_preview_options": map[string]interface{}{
+			"is_disabled": true,
+		},
 	}
 	if markup != nil {
 		payload["reply_markup"] = markup
