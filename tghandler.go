@@ -85,7 +85,7 @@ func handleTGMessage(msg *TGMessage) {
 		handleTGRecvInput(chatID, sess, msg)
 	case statePickToken:
 		// Token search by typing
-		handleTGTokenSearch(chatID, sess, text)
+		handleTGTokenSearch(chatID, sess, msg)
 	default:
 		// Ignore unexpected text
 	}

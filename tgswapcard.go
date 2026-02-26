@@ -170,7 +170,8 @@ func updateSwapCard(chatID int64, sess *tgSession) {
 
 // --- Token Picker ---
 
-// handleTGPickToken shows the token picker grid.
+// handleTGPickToken shows the token picker grid and sends a ForceReply prompt
+// so the keyboard opens immediately for typing a search query.
 func handleTGPickToken(chatID int64, sess *tgSession, side string) {
 	sess.PickSide = side
 	sess.PickPage = 0
@@ -180,6 +181,20 @@ func handleTGPickToken(chatID int64, sess *tgSession, side string) {
 	if sess.CardMsgID != 0 {
 		tgEditMessage(chatID, sess.CardMsgID, text, markup)
 	}
+
+	// Clean up any previous search prompt, then send a new ForceReply.
+	if sess.PromptMsgID != 0 {
+		tgDeleteMessage(chatID, sess.PromptMsgID)
+		sess.PromptMsgID = 0
+	}
+	msg, err := tgSendMessage(chatID, "Or <u>type to search</u> by name or ticker:", &TGForceReply{
+		ForceReply:            true,
+		Selective:             true,
+		InputFieldPlaceholder: "e.g. BTC, Ethereum, USDT...",
+	})
+	if err == nil {
+		sess.PromptMsgID = msg.MessageID
+	}
 }
 
 // renderTokenPicker builds the token picker grid.
@@ -188,7 +203,7 @@ func renderTokenPicker(sess *tgSession, page int) (string, *TGInlineKeyboardMark
 	if sess.PickSide == "to" {
 		side = "Receive"
 	}
-	text := fmt.Sprintf("<b>Select %s Token</b>\n\nTap a token or type to search.", side)
+	text := fmt.Sprintf("<b>Select %s Token</b>\n\nTap a token or <u>type to search</u>.", side)
 
 	var rows [][]TGInlineKeyboardButton
 
@@ -214,7 +229,11 @@ func renderTokenPicker(sess *tgSession, page int) (string, *TGInlineKeyboardMark
 }
 
 // handleTGTokenSearch handles text input during token picker state.
-func handleTGTokenSearch(chatID int64, sess *tgSession, query string) {
+func handleTGTokenSearch(chatID int64, sess *tgSession, msg *TGMessage) {
+	query := strings.TrimSpace(msg.Text)
+	// Clean up the ForceReply prompt and the user's typed message.
+	cleanupPromptReply(chatID, sess, msg.MessageID)
+
 	results := searchTokens(query)
 	if len(results) == 0 {
 		text := "<b>No tokens found for:</b> " + query + "\n\nTry a different ticker or name."
@@ -265,6 +284,12 @@ func handleTGTokenSearch(chatID int64, sess *tgSession, query string) {
 
 // handleTGTokenSelected handles selection of a token ticker.
 func handleTGTokenSelected(chatID int64, sess *tgSession, ticker string) {
+	// Clean up the ForceReply search prompt if it's still open.
+	if sess.PromptMsgID != 0 {
+		tgDeleteMessage(chatID, sess.PromptMsgID)
+		sess.PromptMsgID = 0
+	}
+
 	// Find all networks for this ticker
 	results := searchTokens(ticker)
 	var networks []TokenInfo
@@ -324,6 +349,12 @@ func handleTGTokenSelected(chatID int64, sess *tgSession, ticker string) {
 
 // handleTGNetworkSelected handles selection of a specific network for a token.
 func handleTGNetworkSelected(chatID int64, sess *tgSession, data string) {
+	// Clean up any open search prompt.
+	if sess.PromptMsgID != 0 {
+		tgDeleteMessage(chatID, sess.PromptMsgID)
+		sess.PromptMsgID = 0
+	}
+
 	// data format: "TICKER:network"
 	parts := strings.SplitN(data, ":", 2)
 	if len(parts) != 2 {
@@ -478,6 +509,12 @@ func handleTGSetSlippage(chatID int64, sess *tgSession, value string) {
 // --- Back to Card ---
 
 func handleTGBackToCard(chatID int64, sess *tgSession) {
+	// Clean up any open search prompt.
+	if sess.PromptMsgID != 0 {
+		tgDeleteMessage(chatID, sess.PromptMsgID)
+		sess.PromptMsgID = 0
+	}
+
 	sess.State = stateSwapCard
 	sess.PickSide = ""
 	updateSwapCard(chatID, sess)
