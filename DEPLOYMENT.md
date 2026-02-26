@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| Commit | [980ed36393e3beb977760bd2195efb5a3900056f](https://github.com/uSwapExchange/zero/commit/980ed36393e3beb977760bd2195efb5a3900056f) |
-| Build Time | 2026-02-25T19:44:16-07:00 |
-| Image | `ghcr.io/uswapexchange/zero:980ed36393e3beb977760bd2195efb5a3900056f` |
-| Image Digest | `sha256:f0b839aa4d2501c5b365fdcffc78cdf06ddb60ce527f9f9eb707eca817b06aeb` |
-| CI Build Log | [View](https://github.com/uSwapExchange/zero/actions/runs/22425569095) |
+| Commit | [7efd884c9c57e610e35be234a5ed7e9fe2253245](https://github.com/uSwapExchange/zero/commit/7efd884c9c57e610e35be234a5ed7e9fe2253245) |
+| Build Time | 2026-02-25T22:30:46-07:00 |
+| Image | `ghcr.io/uswapexchange/zero:7efd884c9c57e610e35be234a5ed7e9fe2253245` |
+| Image Digest | `sha256:50a938e9864c9d37f2a36c576232fbbf930346f4e27ff0a414822a96879c5213` |
+| CI Build Log | [View](https://github.com/uSwapExchange/zero/actions/runs/22429265934) |
 | go.mod Hash | `ab903493b5c5cec48f0425ab842f72c9390ac4be5742a569009cd57361a8df84` |
 
 ---
