@@ -92,6 +92,9 @@ code, pre, .mono {
 .footer-powered a { opacity: 0.80; transition: opacity 140ms; }
 .footer-powered a:hover { opacity: 1; }
 .footer-license { font-size: 0.68rem; opacity: 0.25; margin-bottom: 4px; }
+.footer-onion { font-size: 0.68rem; opacity: 0.30; margin-bottom: 4px; word-break: break-all; }
+.footer-onion a { opacity: 0.75; transition: opacity 140ms; }
+.footer-onion a:hover { opacity: 1; }
 .footer-build {
   font-size: 0.65rem;
   opacity: 0.20;
