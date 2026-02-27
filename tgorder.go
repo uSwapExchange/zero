@@ -45,7 +45,6 @@ func handleTGGetQuote(chatID int64, sess *tgSession) {
 		Recipient:          sess.RecvAddr,
 		RecipientType:      "DESTINATION_CHAIN",
 		Deadline:           buildDeadline(1 * time.Hour),
-		Referral:           "uswap-zero",
 		QuoteWaitingTimeMs: 24000,
 		AppFees:            []struct{}{},
 	}
@@ -158,7 +157,6 @@ func handleTGConfirmSwap(chatID int64, sess *tgSession) {
 		Recipient:          sess.RecvAddr,
 		RecipientType:      "DESTINATION_CHAIN",
 		Deadline:           buildDeadline(1 * time.Hour),
-		Referral:           "uswap-zero",
 		QuoteWaitingTimeMs: 24000,
 		AppFees:            []struct{}{},
 	}

@@ -39,7 +39,6 @@ type QuoteRequest struct {
 	Recipient         string     `json:"recipient"`
 	RecipientType     string     `json:"recipientType"`
 	Deadline          string     `json:"deadline"`
-	Referral          string     `json:"referral"`
 	QuoteWaitingTimeMs int       `json:"quoteWaitingTimeMs"`
 	AppFees           []struct{} `json:"appFees"`
 }

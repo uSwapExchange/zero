@@ -319,7 +319,6 @@ func handleQuote(w http.ResponseWriter, r *http.Request) {
 		Recipient:          recipient,
 		RecipientType:      "DESTINATION_CHAIN",
 		Deadline:           buildDeadline(time.Hour),
-		Referral:           "uswap-zero",
 		QuoteWaitingTimeMs: 8000,
 		AppFees:            []struct{}{},
 	}
@@ -458,7 +457,6 @@ func handleSwapConfirm(w http.ResponseWriter, r *http.Request) {
 		Recipient:          recipient,
 		RecipientType:      "DESTINATION_CHAIN",
 		Deadline:           buildDeadline(time.Hour),
-		Referral:           "uswap-zero",
 		QuoteWaitingTimeMs: 8000,
 		AppFees:            []struct{}{},
 	}
