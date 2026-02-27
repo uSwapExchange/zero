@@ -82,7 +82,44 @@ func parseInlineQuery(raw string) parsedInlineQuery {
 	}
 }
 
+// findAllTokenNetworks returns all tokens with an exact ticker match, one per chain,
+// in cache order (which reflects API ordering by liquidity/popularity).
+func findAllTokenNetworks(ticker string) []TokenInfo {
+	matches := searchTokens(ticker)
+	upper := strings.ToUpper(ticker)
+	seen := make(map[string]bool)
+	var result []TokenInfo
+	for _, t := range matches {
+		if strings.ToUpper(t.Ticker) != upper {
+			continue
+		}
+		key := strings.ToLower(t.ChainName)
+		if !seen[key] {
+			seen[key] = true
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
+// estimateOutputForTokens estimates swap output from pre-resolved token instances.
+// Returns ("", "") when prices are unavailable.
+func estimateOutputForTokens(from, to TokenInfo, amountStr string) (outAmt, outUSD string) {
+	if from.Price == 0 || to.Price == 0 {
+		return "", ""
+	}
+	amountF, err := strconv.ParseFloat(amountStr, 64)
+	if err != nil || amountF <= 0 {
+		return "", ""
+	}
+	valueUSD := amountF * from.Price
+	output := valueUSD / to.Price
+	return fmtEstimate(output), fmt.Sprintf("~$%.2f", valueUSD)
+}
+
 // buildEmptyResults returns results for an empty inline query (@botname with no text).
+// Uses hardcoded canonical pairs; tokenLabel naturally shows "(ETH)", "(SOL)" etc.
+// for multi-chain tokens so network context is visible in the title.
 func buildEmptyResults() []interface{} {
 	results := []interface{}{buildStartNewSwapArticle()}
 
@@ -103,9 +140,11 @@ func buildEmptyResults() []interface{} {
 		fromLabel := tokenLabel(from.Ticker, from.ChainName)
 		toLabel := tokenLabel(to.Ticker, to.ChainName)
 		title := fmt.Sprintf("Swap %s → %s", fromLabel, toLabel)
-		desc := networkDisplayName(from.ChainName) + " · Zero fees"
+		desc := networkDisplayName(from.ChainName) + " → " + networkDisplayName(to.ChainName) + " · Zero fees"
 		if from.Price > 0 && to.Price > 0 {
-			desc = fmt.Sprintf("1 %s ≈ %s %s", from.Ticker, fmtEstimate(from.Price/to.Price), to.Ticker)
+			desc = fmt.Sprintf("1 %s ≈ %s %s · %s → %s",
+				fromLabel, fmtEstimate(from.Price/to.Price), toLabel,
+				networkDisplayName(from.ChainName), networkDisplayName(to.ChainName))
 		}
 		results = append(results, buildSwapArticle(
 			fmt.Sprintf("empty-%d", i),
@@ -118,11 +157,14 @@ func buildEmptyResults() []interface{} {
 	return results
 }
 
-// buildSingleTokenResults returns results for a single-word query (full ticker or partial like "BT").
+// buildSingleTokenResults returns results for a single-word query.
+// The FROM token is the first/canonical match per unique ticker.
+// The TO side shows ALL network variants of each popular target so users
+// can see "Swap BTC → USDT (ETH)", "Swap BTC → USDT (SOL)", etc.
 func buildSingleTokenResults(query string) []interface{} {
 	matches := searchTokens(query)
 
-	// Deduplicate by ticker, keep top 3
+	// Deduplicate FROM candidates by ticker; keep up to 3 unique tickers.
 	seen := make(map[string]bool)
 	var froms []TokenInfo
 	for _, t := range matches {
@@ -140,40 +182,35 @@ func buildSingleTokenResults(query string) []interface{} {
 		return buildEmptyResults()
 	}
 
-	popularTargets := []struct{ ticker, net string }{
-		{"ETH", "eth"},
-		{"USDT", "eth"},
-		{"BTC", "btc"},
-		{"USDC", "eth"},
-		{"SOL", "sol"},
-	}
+	popularTargetTickers := []string{"ETH", "USDT", "BTC", "USDC", "SOL"}
 
 	var results []interface{}
 	for i, from := range froms {
-		for j, target := range popularTargets {
-			if strings.EqualFold(from.Ticker, target.ticker) {
+		for _, targetTicker := range popularTargetTickers {
+			if strings.EqualFold(from.Ticker, targetTicker) {
 				continue
 			}
-			to := findToken(target.ticker, target.net)
-			if to == nil {
-				continue
-			}
-			title := fmt.Sprintf("Swap %s → %s",
-				tokenLabel(from.Ticker, from.ChainName),
-				tokenLabel(to.Ticker, to.ChainName))
-			desc := networkDisplayName(from.ChainName) + " · Zero fees"
-			if from.Price > 0 && to.Price > 0 {
-				desc = fmt.Sprintf("1 %s ≈ %s %s",
-					from.Ticker, fmtEstimate(from.Price/to.Price), to.Ticker)
-			}
-			results = append(results, buildSwapArticle(
-				fmt.Sprintf("single-%d-%d", i, j),
-				title, desc,
-				from.Ticker, from.ChainName,
-				to.Ticker, to.ChainName, "",
-			))
-			if len(results) >= 10 {
-				return results
+			// All network variants of this target ticker.
+			toVariants := findAllTokenNetworks(targetTicker)
+			for k, to := range toVariants {
+				fromLabel := tokenLabel(from.Ticker, from.ChainName)
+				toLabel := tokenLabel(to.Ticker, to.ChainName)
+				title := fmt.Sprintf("Swap %s → %s", fromLabel, toLabel)
+				desc := networkDisplayName(from.ChainName) + " → " + networkDisplayName(to.ChainName) + " · Zero fees"
+				if from.Price > 0 && to.Price > 0 {
+					desc = fmt.Sprintf("1 %s ≈ %s %s · %s → %s",
+						fromLabel, fmtEstimate(from.Price/to.Price), toLabel,
+						networkDisplayName(from.ChainName), networkDisplayName(to.ChainName))
+				}
+				results = append(results, buildSwapArticle(
+					fmt.Sprintf("single-%d-%s-%d", i, strings.ToLower(targetTicker), k),
+					title, desc,
+					from.Ticker, from.ChainName,
+					to.Ticker, to.ChainName, "",
+				))
+				if len(results) >= 10 {
+					return results
+				}
 			}
 		}
 	}
@@ -181,38 +218,78 @@ func buildSingleTokenResults(query string) []interface{} {
 }
 
 // buildPairResults returns results for a two-token query (e.g. "BTC ETH").
+//
+// Forward direction: canonical FROM → every TO network variant.
+// Reverse direction: canonical TO → every FROM network variant.
+//
+// Example for "BTC USDT":
+//   Swap BTC → USDT (ETH), Swap BTC → USDT (SOL), Swap BTC → USDT (TRON) ...
+//   Swap USDT (ETH) → BTC
 func buildPairResults(fromQuery, toQuery string) []interface{} {
-	from := findToken(fromQuery, "")
-	to := findToken(toQuery, "")
-	if from == nil || to == nil {
+	fromVariants := findAllTokenNetworks(fromQuery)
+	toVariants := findAllTokenNetworks(toQuery)
+	if len(fromVariants) == 0 || len(toVariants) == 0 {
 		return buildSingleTokenResults(fromQuery)
 	}
 
-	fromLabel := tokenLabel(from.Ticker, from.ChainName)
-	toLabel := tokenLabel(to.Ticker, to.ChainName)
+	from := fromVariants[0] // canonical FROM
+	to := toVariants[0]     // canonical TO (used as FROM in reverse)
 
-	desc := "Zero fees · Tap to get quote"
-	descRev := "Swap in reverse · Zero fees"
-	if from.Price > 0 && to.Price > 0 {
-		desc = fmt.Sprintf("1 %s ≈ %s %s", from.Ticker, fmtEstimate(from.Price/to.Price), to.Ticker)
-		descRev = fmt.Sprintf("1 %s ≈ %s %s", to.Ticker, fmtEstimate(to.Price/from.Price), from.Ticker)
+	var results []interface{}
+
+	// Forward: canonical FROM → all TO network variants
+	for i, toVar := range toVariants {
+		if len(results) >= 8 {
+			break
+		}
+		fromLabel := tokenLabel(from.Ticker, from.ChainName)
+		toLabel := tokenLabel(toVar.Ticker, toVar.ChainName)
+		title := fmt.Sprintf("Swap %s → %s", fromLabel, toLabel)
+		desc := networkDisplayName(from.ChainName) + " → " + networkDisplayName(toVar.ChainName) + " · Zero fees"
+		if from.Price > 0 && toVar.Price > 0 {
+			desc = fmt.Sprintf("1 %s ≈ %s %s · %s → %s",
+				fromLabel, fmtEstimate(from.Price/toVar.Price), toLabel,
+				networkDisplayName(from.ChainName), networkDisplayName(toVar.ChainName))
+		}
+		results = append(results, buildSwapArticle(
+			fmt.Sprintf("pair-fwd-%d", i),
+			title, desc,
+			from.Ticker, from.ChainName,
+			toVar.Ticker, toVar.ChainName, "",
+		))
 	}
 
-	return []interface{}{
-		buildSwapArticle("pair-0",
-			fmt.Sprintf("Swap %s → %s", fromLabel, toLabel), desc,
-			from.Ticker, from.ChainName, to.Ticker, to.ChainName, ""),
-		buildSwapArticle("pair-1",
-			fmt.Sprintf("Swap %s → %s", toLabel, fromLabel), descRev,
-			to.Ticker, to.ChainName, from.Ticker, from.ChainName, ""),
+	// Reverse: canonical TO → all FROM network variants
+	for i, fromVar := range fromVariants {
+		if len(results) >= 12 {
+			break
+		}
+		toLabel := tokenLabel(to.Ticker, to.ChainName)
+		fromLabel := tokenLabel(fromVar.Ticker, fromVar.ChainName)
+		title := fmt.Sprintf("Swap %s → %s", toLabel, fromLabel)
+		desc := networkDisplayName(to.ChainName) + " → " + networkDisplayName(fromVar.ChainName) + " · Zero fees"
+		if to.Price > 0 && fromVar.Price > 0 {
+			desc = fmt.Sprintf("1 %s ≈ %s %s · %s → %s",
+				toLabel, fmtEstimate(to.Price/fromVar.Price), fromLabel,
+				networkDisplayName(to.ChainName), networkDisplayName(fromVar.ChainName))
+		}
+		results = append(results, buildSwapArticle(
+			fmt.Sprintf("pair-rev-%d", i),
+			title, desc,
+			to.Ticker, to.ChainName,
+			fromVar.Ticker, fromVar.ChainName, "",
+		))
 	}
+
+	return results
 }
 
 // buildPairAmountResults returns results for a two-token + amount query (e.g. "BTC ETH 0.5").
+// Shows all TO network variants, each with an estimated output.
 func buildPairAmountResults(fromQuery, toQuery, amount string) []interface{} {
-	from := findToken(fromQuery, "")
-	to := findToken(toQuery, "")
-	if from == nil || to == nil {
+	fromVariants := findAllTokenNetworks(fromQuery)
+	toVariants := findAllTokenNetworks(toQuery)
+	if len(fromVariants) == 0 || len(toVariants) == 0 {
 		return buildPairResults(fromQuery, toQuery)
 	}
 
@@ -220,20 +297,32 @@ func buildPairAmountResults(fromQuery, toQuery, amount string) []interface{} {
 		return buildPairResults(fromQuery, toQuery)
 	}
 
-	fromLabel := tokenLabel(from.Ticker, from.ChainName)
-	toLabel := tokenLabel(to.Ticker, to.ChainName)
-	title := fmt.Sprintf("Swap %s %s → %s", amount, fromLabel, toLabel)
+	from := fromVariants[0] // canonical FROM
 
-	outAmt, outUSD := estimateOutput(from.Ticker, to.Ticker, amount)
-	desc := "Tap to get exact quote · Zero fees"
-	if outAmt != "" {
-		desc = fmt.Sprintf("≈ %s %s (%s) · Zero fees", outAmt, toLabel, outUSD)
-	}
+	var results []interface{}
+	for i, to := range toVariants {
+		if len(results) >= 8 {
+			break
+		}
+		fromLabel := tokenLabel(from.Ticker, from.ChainName)
+		toLabel := tokenLabel(to.Ticker, to.ChainName)
+		title := fmt.Sprintf("Swap %s %s → %s", amount, fromLabel, toLabel)
 
-	return []interface{}{
-		buildSwapArticle("amount-0", title, desc,
-			from.Ticker, from.ChainName, to.Ticker, to.ChainName, amount),
+		outAmt, outUSD := estimateOutputForTokens(from, to, amount)
+		desc := networkDisplayName(from.ChainName) + " → " + networkDisplayName(to.ChainName) + " · Tap to quote"
+		if outAmt != "" {
+			desc = fmt.Sprintf("≈ %s %s (%s) · %s → %s",
+				outAmt, toLabel, outUSD,
+				networkDisplayName(from.ChainName), networkDisplayName(to.ChainName))
+		}
+		results = append(results, buildSwapArticle(
+			fmt.Sprintf("amount-%d", i),
+			title, desc,
+			from.Ticker, from.ChainName,
+			to.Ticker, to.ChainName, amount,
+		))
 	}
+	return results
 }
 
 // buildStatusResults returns an inline result showing the current order status.
@@ -386,23 +475,6 @@ func parseSwapStartParam(sess *tgSession, param string) {
 	if len(parts) == 3 && parts[2] != "" {
 		sess.Amount = parts[2]
 	}
-}
-
-// estimateOutput estimates swap output using cached token prices.
-// Returns ("", "") when prices are not available.
-func estimateOutput(fromTicker, toTicker, amountStr string) (outAmt, outUSD string) {
-	from := findToken(fromTicker, "")
-	to := findToken(toTicker, "")
-	if from == nil || to == nil || from.Price == 0 || to.Price == 0 {
-		return "", ""
-	}
-	amountF, err := strconv.ParseFloat(amountStr, 64)
-	if err != nil || amountF <= 0 {
-		return "", ""
-	}
-	valueUSD := amountF * from.Price
-	output := valueUSD / to.Price
-	return fmtEstimate(output), fmt.Sprintf("~$%.2f", valueUSD)
 }
 
 // fmtEstimate formats a float as a concise decimal string, trimming trailing zeros.
