@@ -63,6 +63,15 @@ jobs:
             BUILD_TIME=${{ github.event.head_commit.timestamp }}
             BUILD_LOG_URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
+      - name: Build and push Tor image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: ./tor
+          push: true
+          tags: |
+            ${{ env.IMAGE }}-tor:latest
+            ${{ env.IMAGE }}-tor:${{ github.sha }}
+
       - name: Deploy to Coolify
         env:
           HAS_COOLIFY: ${{ secrets.COOLIFY_API_TOKEN }}
