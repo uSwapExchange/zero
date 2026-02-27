@@ -380,7 +380,6 @@ func TestDryQuoteETHtoUSDT(t *testing.T) {
 		Recipient:          "0xab5801a7d398351b8be11c439e05c5b3259aec9b",
 		RecipientType:      "DESTINATION_CHAIN",
 		Deadline:           buildDeadline(time.Hour),
-		Referral:           "uswap-zero",
 		QuoteWaitingTimeMs: 10000,
 		AppFees:            []struct{}{},
 	}
@@ -442,7 +441,6 @@ func TestDryQuoteBTCtoETH(t *testing.T) {
 		Recipient:          "0xab5801a7d398351b8be11c439e05c5b3259aec9b",
 		RecipientType:      "DESTINATION_CHAIN",
 		Deadline:           buildDeadline(time.Hour),
-		Referral:           "uswap-zero",
 		QuoteWaitingTimeMs: 10000,
 		AppFees:            []struct{}{},
 	}
