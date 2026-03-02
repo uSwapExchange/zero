@@ -74,6 +74,10 @@
           <label for="slip-2" class="pill-label">2%</label>
           <input type="radio" name="slippage" value="3" id="slip-3" class="pill-radio" {{if eq .Slippage "3"}}checked{{end}}>
           <label for="slip-3" class="pill-label">3%</label>
+          <div class="custom-slip">
+            <input type="number" id="slip-custom" class="custom-slip__input" placeholder="Custom" step="0.1" min="0.01" max="50" inputmode="decimal" autocomplete="off" {{if and (ne .Slippage "0.5") (ne .Slippage "1") (ne .Slippage "2") (ne .Slippage "3") (ne .Slippage "")}}value="{{.Slippage}}"{{end}}>
+            <span class="custom-slip__pct">%</span>
+          </div>
         </div>
       </div>
     </div>
@@ -89,6 +93,20 @@
     ao.addEventListener('input',function(){if(ao.value)ai.value='';upd();});
     function upd(){btn.textContent=(!ai.value&&!ao.value)?'Quick Swap \u2192':'Get Quote \u2192';}
     upd();
+
+    var ci=document.getElementById('slip-custom'),radios=document.querySelectorAll('input[name="slippage"]');
+    if(!ci)return;
+    ci.addEventListener('input',function(){
+      if(ci.value){radios.forEach(function(r){r.checked=false;});}
+    });
+    radios.forEach(function(r){r.addEventListener('change',function(){if(r.checked)ci.value='';});});
+
+    var form=btn.closest('form');
+    if(form)form.addEventListener('submit',function(){
+      if(ci.value&&!document.querySelector('input[name="slippage"]:checked')){
+        var h=document.createElement('input');h.type='hidden';h.name='slippage';h.value=ci.value;form.appendChild(h);
+      }
+    });
   })();
   </script>
 

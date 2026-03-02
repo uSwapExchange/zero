@@ -96,6 +96,7 @@ func renderSwapCard(sess *tgSession) (string, *TGInlineKeyboardMarkup) {
 
 	// Row 2: Inline slippage — always visible, selected marked with ●
 	slippageOpts := []string{"0.5", "1", "2", "3"}
+	isPreset := false
 	var slipRow []TGInlineKeyboardButton
 	for _, s := range slippageOpts {
 		label := s + "%"
@@ -103,6 +104,7 @@ func renderSwapCard(sess *tgSession) (string, *TGInlineKeyboardMarkup) {
 		if s == sess.Slippage {
 			label = "● " + label
 			style = "primary"
+			isPreset = true
 		}
 		slipRow = append(slipRow, TGInlineKeyboardButton{
 			Text:         label,
@@ -110,6 +112,18 @@ func renderSwapCard(sess *tgSession) (string, *TGInlineKeyboardMarkup) {
 			Style:        style,
 		})
 	}
+	// Custom slippage button
+	customLabel := "Custom"
+	customStyle := ""
+	if sess.Slippage != "" && !isPreset {
+		customLabel = "● " + sess.Slippage + "%"
+		customStyle = "primary"
+	}
+	slipRow = append(slipRow, TGInlineKeyboardButton{
+		Text:         customLabel,
+		CallbackData: "slc",
+		Style:        customStyle,
+	})
 	rows = append(rows, slipRow)
 
 	// Row 3: Set Send Amount + Set Receive Amount
@@ -550,6 +564,38 @@ func handleTGRecvInput(chatID int64, sess *tgSession, msg *TGMessage) {
 func handleTGSetSlippage(chatID int64, sess *tgSession, value string) {
 	sess.Slippage = value
 	sess.State = stateSwapCard
+	updateSwapCard(chatID, sess)
+}
+
+func handleTGPromptCustomSlippage(chatID int64, sess *tgSession) {
+	sess.State = statePickSlippage
+	msg, err := tgSendMessage(chatID, "Enter custom slippage % (0.01–50):", &TGForceReply{
+		ForceReply:            true,
+		Selective:             true,
+		InputFieldPlaceholder: "e.g. 1.5",
+	})
+	if err == nil {
+		sess.PromptMsgID = msg.MessageID
+	}
+}
+
+func handleTGCustomSlippageInput(chatID int64, sess *tgSession, msg *TGMessage) {
+	value := strings.TrimSpace(msg.Text)
+	value = strings.TrimSuffix(value, "%")
+	value = strings.TrimSpace(value)
+
+	if _, err := slippageToBPS(value); err != nil {
+		errMsg, _ := tgSendMessage(chatID, "Invalid slippage. Enter a number between 0.01 and 50.", nil)
+		if errMsg != nil {
+			go func() { tgDeleteMessage(chatID, errMsg.MessageID) }()
+		}
+		return
+	}
+
+	sess.Slippage = value
+	sess.State = stateSwapCard
+
+	cleanupPromptReply(chatID, sess, msg.MessageID)
 	updateSwapCard(chatID, sess)
 }
 

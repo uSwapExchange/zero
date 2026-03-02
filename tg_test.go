@@ -175,10 +175,10 @@ func TestRenderSwapCard(t *testing.T) {
 		t.Errorf("to button style should be success, got %q", row0[2].Style)
 	}
 
-	// Row 1: inline slippage (4 buttons)
+	// Row 1: inline slippage (4 presets + Custom)
 	row1 := markup.InlineKeyboard[1]
-	if len(row1) != 4 {
-		t.Errorf("slippage row should have 4 buttons, got %d", len(row1))
+	if len(row1) != 5 {
+		t.Errorf("slippage row should have 5 buttons, got %d", len(row1))
 	}
 	// Default slippage is 1%, so the "1%" button should be selected
 	foundSelected := false

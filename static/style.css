@@ -447,6 +447,44 @@ code, pre, .mono {
   color: #fff;
   box-shadow: 0 6px 16px rgba(var(--accent-a),0.12);
 }
+.custom-slip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  padding: 0 10px 0 0;
+  opacity: 0.65;
+  transition: all 140ms ease;
+}
+.custom-slip:focus-within {
+  border-color: rgba(var(--accent-a),0.38);
+  background: rgba(var(--accent-a),0.14);
+  opacity: 1;
+  box-shadow: 0 6px 16px rgba(var(--accent-a),0.12);
+}
+.custom-slip__input {
+  width: 52px;
+  background: none;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 6px 2px 6px 12px;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+.custom-slip__input::-webkit-inner-spin-button,
+.custom-slip__input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.custom-slip__input::placeholder { color: rgba(255,255,255,0.4); }
+.custom-slip__pct {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.6;
+  margin-left: 1px;
+}
 
 .form-select {
   height: 36px;

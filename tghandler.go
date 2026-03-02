@@ -105,6 +105,8 @@ func handleTGMessage(msg *TGMessage) {
 	case statePickToken:
 		// Token search by typing
 		handleTGTokenSearch(chatID, sess, msg)
+	case statePickSlippage:
+		handleTGCustomSlippageInput(chatID, sess, msg)
 	default:
 		// Ignore unexpected text
 	}
@@ -156,6 +158,9 @@ func handleTGCallback(cb *TGCallbackQuery) {
 	case strings.HasPrefix(data, "sl:"):
 		tgAnswerCallback(cb.ID, "Slippage: "+data[3:]+"%")
 		handleTGSetSlippage(chatID, sess, data[3:])
+	case data == "slc":
+		tgAnswerCallback(cb.ID, "")
+		handleTGPromptCustomSlippage(chatID, sess)
 	case strings.HasPrefix(data, "ts:"):
 		tgAnswerCallback(cb.ID, "")
 		handleTGTokenSelected(chatID, sess, data[3:])
