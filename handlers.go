@@ -919,7 +919,16 @@ func handleAPIOrderLookup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calculate time remaining
+	// Fetch live status from NEAR Intents
+	status, _ := fetchStatus(order.DepositAddr, order.Memo)
+	liveStatus := "UNKNOWN"
+	var swapDetails *SwapDetails
+	if status != nil {
+		liveStatus = status.Status
+		swapDetails = status.SwapDetails
+	}
+
+	// Calculate time remaining (only meaningful for non-terminal states)
 	timeRemaining := ""
 	if order.Deadline != "" {
 		dl, err := time.Parse(time.RFC3339, order.Deadline)
@@ -950,23 +959,49 @@ func handleAPIOrderLookup(w http.ResponseWriter, r *http.Request) {
 		toNetwork = toToken.ChainName
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	// Use actual amounts from swap details if the swap completed
+	amountIn := order.AmountIn
+	amountOut := order.AmountOut
+	if swapDetails != nil {
+		if swapDetails.AmountInFmt != "" {
+			amountIn = swapDetails.AmountInFmt
+		}
+		if swapDetails.AmountOutFmt != "" {
+			amountOut = swapDetails.AmountOutFmt
+		}
+	}
+
+	result := map[string]interface{}{
 		"depositAddress": order.DepositAddr,
 		"memo":           order.Memo,
 		"fromToken":      order.FromTicker,
 		"fromNetwork":    fromNetwork,
 		"toToken":        order.ToTicker,
 		"toNetwork":      toNetwork,
-		"amountIn":       order.AmountIn,
-		"amountOut":      order.AmountOut,
+		"amountIn":       amountIn,
+		"amountOut":      amountOut,
 		"deadline":       order.Deadline,
 		"timeRemaining":  timeRemaining,
 		"correlationId":  order.CorrID,
 		"refundAddress":  order.RefundAddr,
 		"receiveAddress": order.RecvAddr,
 		"swapType":       order.SwapType,
-	})
+		"status":         liveStatus,
+	}
+
+	// Include transaction links if available
+	if swapDetails != nil {
+		if len(swapDetails.DestTxs) > 0 {
+			result["destinationTx"] = swapDetails.DestTxs[0].Hash
+			result["destinationExplorerUrl"] = swapDetails.DestTxs[0].ExplorerURL
+		}
+		if swapDetails.RefundReason != "" {
+			result["refundReason"] = swapDetails.RefundReason
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }
 
 // handleAPIEstimateTime returns estimated swap times by blockchain.
