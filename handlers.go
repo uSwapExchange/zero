@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -897,6 +898,158 @@ func handleGenIcon(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/svg+xml")
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	fmt.Fprint(w, generateTokenIconSVG(ticker))
+}
+
+// handleAPIOrderLookup decrypts an order token and returns order details as JSON.
+// GET /api/order/{token}
+func handleAPIOrderLookup(w http.ResponseWriter, r *http.Request) {
+	token := strings.TrimPrefix(r.URL.Path, "/api/order/")
+	if token == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "No order token provided."})
+		return
+	}
+
+	order, err := decryptOrderData(token)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid or expired order token."})
+		return
+	}
+
+	// Calculate time remaining
+	timeRemaining := ""
+	if order.Deadline != "" {
+		dl, err := time.Parse(time.RFC3339, order.Deadline)
+		if err == nil {
+			remaining := time.Until(dl)
+			if remaining > 0 {
+				mins := int(remaining.Minutes())
+				if mins >= 60 {
+					timeRemaining = fmt.Sprintf("%dh %dm", mins/60, mins%60)
+				} else {
+					timeRemaining = fmt.Sprintf("%dm", mins)
+				}
+			} else {
+				timeRemaining = "Expired"
+			}
+		}
+	}
+
+	// Resolve display names for networks
+	fromToken := findToken(order.FromTicker, order.FromNet)
+	toToken := findToken(order.ToTicker, order.ToNet)
+	fromNetwork := order.FromNet
+	toNetwork := order.ToNet
+	if fromToken != nil {
+		fromNetwork = fromToken.ChainName
+	}
+	if toToken != nil {
+		toNetwork = toToken.ChainName
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"depositAddress": order.DepositAddr,
+		"memo":           order.Memo,
+		"fromToken":      order.FromTicker,
+		"fromNetwork":    fromNetwork,
+		"toToken":        order.ToTicker,
+		"toNetwork":      toNetwork,
+		"amountIn":       order.AmountIn,
+		"amountOut":      order.AmountOut,
+		"deadline":       order.Deadline,
+		"timeRemaining":  timeRemaining,
+		"correlationId":  order.CorrID,
+		"refundAddress":  order.RefundAddr,
+		"receiveAddress": order.RecvAddr,
+		"swapType":       order.SwapType,
+	})
+}
+
+// handleAPIEstimateTime returns estimated swap times by blockchain.
+// GET /api/estimate-time?from={chain}&to={chain}
+func handleAPIEstimateTime(w http.ResponseWriter, r *http.Request) {
+	// Typical confirmation times by blockchain (in minutes).
+	// These are conservative estimates for deposit confirmation + swap execution.
+	chainTimes := map[string]int{
+		"btc": 30, "bitcoin": 30,
+		"eth": 5, "ethereum": 5,
+		"sol": 1, "solana": 1,
+		"base": 3,
+		"arb": 2, "arbitrum": 2,
+		"op": 2, "optimism": 2,
+		"pol": 3, "polygon": 3,
+		"avax": 2, "avalanche": 2,
+		"bsc": 2, "bnb chain": 2,
+		"ton": 2,
+		"tron": 3,
+		"near": 1,
+		"sui": 1,
+		"apt": 2, "aptos": 2,
+		"doge": 10, "dogecoin": 10,
+		"ltc": 10, "litecoin": 10,
+		"xrp": 1,
+		"bch": 20, "bitcoin cash": 20,
+		"xlm": 1, "stellar": 1,
+	}
+
+	fromChain := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("from")))
+	toChain := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("to")))
+
+	type chainEstimate struct {
+		Chain   string `json:"chain"`
+		Minutes int    `json:"minutes"`
+		Label   string `json:"label"`
+	}
+
+	formatLabel := func(mins int) string {
+		if mins < 2 {
+			return "~1 minute"
+		}
+		return fmt.Sprintf("~%d minutes", mins)
+	}
+
+	// If specific chains requested, return just those
+	if fromChain != "" || toChain != "" {
+		fromMins := 5 // default
+		toMins := 2   // default (swap execution)
+		if v, ok := chainTimes[fromChain]; ok {
+			fromMins = v
+		}
+		if v, ok := chainTimes[toChain]; ok {
+			toMins = v
+		}
+		totalMins := fromMins + toMins
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"fromChain":     fromChain,
+			"toChain":       toChain,
+			"depositTime":   chainEstimate{Chain: fromChain, Minutes: fromMins, Label: formatLabel(fromMins)},
+			"deliveryTime":  chainEstimate{Chain: toChain, Minutes: toMins, Label: formatLabel(toMins)},
+			"totalEstimate": chainEstimate{Minutes: totalMins, Label: formatLabel(totalMins)},
+		})
+		return
+	}
+
+	// No params: return full table of known chains
+	seen := make(map[string]bool)
+	var all []chainEstimate
+	for chain, mins := range chainTimes {
+		if len(chain) <= 4 && !seen[chain] { // short codes only to avoid duplicates
+			seen[chain] = true
+			all = append(all, chainEstimate{Chain: chain, Minutes: mins, Label: formatLabel(mins)})
+		}
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].Minutes < all[j].Minutes })
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"chains": all,
+	})
 }
 
 // filterNetworks filters network groups by a search query.

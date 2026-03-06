@@ -1,0 +1,22 @@
+{
+  "name": "lookup_order",
+  "displayName": "Look Up Swap Order",
+  "description": "Look up the details of a swap order using the order token (the long code from the order URL). Use when a customer says things like: 'Can you check my order?', 'What's happening with my swap?', 'I have this order token...', 'Here's my order link', 'Can you look up this swap?'. The order token is the long string after /order/ in their URL.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "order_token": {
+        "type": "string",
+        "description": "The order token — the long code from the order URL (the part after /order/ in the link). Ask the customer to paste their order link or token."
+      }
+    },
+    "required": ["order_token"]
+  },
+  "httpMethod": "GET",
+  "httpUrl": "https://zero.uswap.net/api/order/{{order_token}}",
+  "httpHeaders": {},
+  "httpBody": null,
+  "secrets": {},
+  "responseMapping": null,
+  "responsePrompt": "Present the swap order details in a clear, friendly way. Include:\n- What they're swapping: fromToken on fromNetwork → toToken on toNetwork\n- Amount sending (amountIn) and expected to receive (amountOut)\n- Swap type (if ANY_INPUT, explain they can send any amount)\n- Time remaining on the deposit deadline (timeRemaining). If 'Expired', let them know the deadline passed and they should start a new swap.\n- Their deposit address (depositAddress) and memo if present\n- Their refund and receive addresses for confirmation\n\nIf the response contains an error field, explain the issue — likely an invalid or expired order token. Suggest they double-check the link or start a new swap."
+}
