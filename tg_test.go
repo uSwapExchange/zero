@@ -68,15 +68,15 @@ func TestSessionIsComplete(t *testing.T) {
 		t.Error("empty session should not be complete")
 	}
 
-	// Amount is optional — tokens + addresses are enough
+	// Addresses alone are not enough — amount is required
 	sess.RefundAddr = "bc1qxyz"
 	sess.RecvAddr = "0xabc"
 
-	if !sess.isComplete() {
-		t.Error("session with tokens+addresses should be complete (amount optional)")
+	if sess.isComplete() {
+		t.Error("session without amount should not be complete")
 	}
 
-	// Also complete with amount set
+	// Complete with amount set
 	sess.Amount = "0.5"
 	if !sess.isComplete() {
 		t.Error("session with all fields should be complete")
@@ -87,9 +87,9 @@ func TestSessionSwapType(t *testing.T) {
 	sess := &tgSession{}
 	sess.reset()
 
-	// No amounts → ANY_INPUT
-	if got := sess.swapType(); got != "ANY_INPUT" {
-		t.Errorf("no amounts: swapType() = %q, want ANY_INPUT", got)
+	// No amounts → FLEX_INPUT (default)
+	if got := sess.swapType(); got != "FLEX_INPUT" {
+		t.Errorf("no amounts: swapType() = %q, want FLEX_INPUT", got)
 	}
 
 	// Send amount → FLEX_INPUT
@@ -492,55 +492,6 @@ func TestRenderDepositCardMono(t *testing.T) {
 		if n != cardW {
 			t.Errorf("deposit card line width = %d, want %d: %q", n, cardW, line)
 		}
-	}
-}
-
-func TestRenderAnyInputDepositCardMono(t *testing.T) {
-	p := AnyInputCardData{
-		FromTicker: "BTC",
-		ToTicker:   "ETH",
-		Network:    "Bitcoin",
-		RefundAddr: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
-		RecvAddr:   "0x1234567890abcdef1234567890abcdef12345678",
-	}
-	card := renderAnyInputDepositCardMono(p)
-	if card == "" {
-		t.Fatal("any_input deposit card should not be empty")
-	}
-	if !strings.Contains(card, "QUICK SWAP") {
-		t.Error("any_input card should contain QUICK SWAP")
-	}
-	if !strings.Contains(card, "any") {
-		t.Error("any_input card should contain 'any' for send amount")
-	}
-
-	for _, line := range strings.Split(card, "\n") {
-		n := len([]rune(line))
-		if n != cardW {
-			t.Errorf("any_input card line width = %d, want %d: %q", n, cardW, line)
-		}
-	}
-}
-
-func TestRenderSwapCardQuickSwap(t *testing.T) {
-	sess := &tgSession{}
-	sess.reset()
-	sess.RefundAddr = "bc1qxyz1234567890"
-	sess.RecvAddr = "0xabc1234567890"
-	// No Amount or AmountOut set → Quick Swap
-
-	_, markup := renderSwapCard(sess)
-
-	foundQuickSwap := false
-	for _, row := range markup.InlineKeyboard {
-		for _, btn := range row {
-			if btn.CallbackData == "gq" && strings.Contains(btn.Text, "Quick Swap") {
-				foundQuickSwap = true
-			}
-		}
-	}
-	if !foundQuickSwap {
-		t.Error("complete card with no amounts should show Quick Swap button")
 	}
 }
 

@@ -163,14 +163,10 @@ func renderSwapCard(sess *tgSession) (string, *TGInlineKeyboardMarkup) {
 	}
 	rows = append(rows, []TGInlineKeyboardButton{recvBtn})
 
-	// Row 6: Get Quote / Quick Swap (only when all fields filled)
+	// Row 6: Get Quote (only when all fields filled)
 	if sess.isComplete() {
-		quoteLabel := "✅ Get Quote →"
-		if sess.Amount == "" && sess.AmountOut == "" {
-			quoteLabel = "⚡ Quick Swap →"
-		}
 		rows = append(rows, []TGInlineKeyboardButton{
-			{Text: quoteLabel, CallbackData: "gq", Style: "success"},
+			{Text: "✅ Get Quote →", CallbackData: "gq", Style: "success"},
 		})
 	}
 

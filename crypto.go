@@ -51,7 +51,7 @@ type OrderData struct {
 	CorrID      string `json:"c"`
 	RefundAddr  string `json:"ra,omitempty"`
 	RecvAddr    string `json:"rca,omitempty"`
-	SwapType    string `json:"st,omitempty"` // FLEX_INPUT, EXACT_OUTPUT, ANY_INPUT (empty = FLEX_INPUT)
+	SwapType    string `json:"st,omitempty"` // FLEX_INPUT or EXACT_OUTPUT (empty = FLEX_INPUT)
 }
 
 // encryptOrderData encrypts order data into a base64url token.

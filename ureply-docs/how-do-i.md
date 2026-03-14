@@ -27,9 +27,7 @@ To make a swap, follow these steps:
 
 **On the web:** Type in the "You Send" or "You Receive" field. Setting one will automatically calculate the other based on the current rate.
 
-**On Telegram:** Tap "Set Send Amt" or "Set Recv Amt" and type your amount when prompted.
-
-Leave both fields blank to use "Quick Swap" mode, where you can send any amount and it gets converted at the current market rate.
+**On Telegram:** Tap "Set Send Amt" or "Set Recv Amt" and type your amount when prompted. You must set at least one amount before getting a quote.
 
 ## How do I set slippage?
 
@@ -53,7 +51,7 @@ The default slippage is 1%. Higher slippage means your swap is more likely to fi
 
 ## How do I use the Telegram bot?
 
-Send `/start` to the bot to begin. Use the inline buttons to pick your tokens, set amounts, enter your addresses, and adjust slippage. When everything is set, tap "Get Quote" or "Quick Swap". The bot guides you through the entire flow with buttons — no commands to memorize.
+Send `/start` to the bot to begin. Use the inline buttons to pick your tokens, set amounts, enter your addresses, and adjust slippage. When everything is set, tap "Get Quote". The bot guides you through the entire flow with buttons — no commands to memorize.
 
 ## How do I use uSwap Zero in a group chat?
 
@@ -76,10 +74,6 @@ Type the bot's username in any Telegram chat followed by a token pair. For examp
 **On the web:** Visit the Verify page (linked in the footer). It shows the exact commit hash, build time, CI build log, and links to every source file. You can build and run the project yourself to confirm everything matches.
 
 **On Telegram:** Send `/verify` to see the current commit hash and build info.
-
-## How do I use Quick Swap / ANY_INPUT mode?
-
-Leave both the send and receive amount fields empty. The button will change to "Quick Swap". After confirming, you'll receive a deposit address where you can send any amount of the source token. Each deposit gets converted at the current market rate. This is great when you don't know exactly how much you want to swap.
 
 ## How do I opt out of bot notifications?
 

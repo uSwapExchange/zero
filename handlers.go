@@ -147,7 +147,6 @@ type OrderPageData struct {
 	TimeRemaining string
 	IsTerminal    bool
 	StatusStep    int // 0=pending, 1=processing, 2=complete
-	Withdrawals   *AnyInputWithdrawalsResponse
 }
 
 // CurrenciesPageData is the data for the currencies list page.
@@ -306,57 +305,12 @@ func handleQuote(w http.ResponseWriter, r *http.Request) {
 	// Auto-detect swap type based on which amount field is filled.
 	// Both filled: prefer send amount (FLEX_INPUT).
 	swapType := "FLEX_INPUT"
-	if amount == "" && amountOutForm == "" {
-		swapType = "ANY_INPUT"
-	} else if amountOutForm != "" && amount == "" {
+	if amountOutForm != "" && amount == "" {
 		swapType = "EXACT_OUTPUT"
 	}
 
-	// ANY_INPUT: skip dry quote, go directly to real quote → deposit page.
-	if swapType == "ANY_INPUT" {
-		refAmount, _ := humanToAtomic("1", fromToken.Decimals)
-		quoteReq := &QuoteRequest{
-			Dry:                false,
-			SwapType:           "ANY_INPUT",
-			SlippageTolerance:  slippageBPS,
-			OriginAsset:        fromToken.DefuseAssetID,
-			DepositType:        "ORIGIN_CHAIN",
-			DestinationAsset:   toToken.DefuseAssetID,
-			Amount:             refAmount,
-			RefundTo:           refundAddr,
-			RefundType:         "ORIGIN_CHAIN",
-			Recipient:          recipient,
-			RecipientType:      "DESTINATION_CHAIN",
-			Deadline:           buildDeadline(time.Hour),
-			QuoteWaitingTimeMs: 8000,
-			AppFees:            []struct{}{},
-		}
-		quoteResp, err := requestQuote(quoteReq)
-		if err != nil {
-			renderError(w, 502, "Quick Swap Failed", "NEAR Intents API is temporarily unavailable. This usually resolves in a few minutes.", "Try Again", "/")
-			return
-		}
-		orderData := &OrderData{
-			DepositAddr: quoteResp.Quote.DepositAddress,
-			Memo:        quoteResp.Quote.DepositMemo,
-			FromTicker:  fromTicker,
-			FromNet:     fromNet,
-			ToTicker:    toTicker,
-			ToNet:       toNet,
-			AmountIn:    "any",
-			AmountOut:   "market rate",
-			Deadline:    quoteResp.Quote.Deadline,
-			CorrID:      quoteResp.CorrelationID,
-			RefundAddr:  refundAddr,
-			RecvAddr:    recipient,
-			SwapType:    "ANY_INPUT",
-		}
-		token, err := encryptOrderData(orderData)
-		if err != nil {
-			renderError(w, 500, "Internal Error", "Failed to create order token.", "Back to Home", "/")
-			return
-		}
-		http.Redirect(w, r, "/order/"+token, http.StatusFound)
+	if amount == "" && amountOutForm == "" {
+		renderError(w, 400, "Amount Required", "Please enter a send or receive amount.", "Go Back", "/")
 		return
 	}
 
@@ -669,12 +623,6 @@ func handleOrder(w http.ResponseWriter, r *http.Request) {
 		refresh = 10
 	}
 
-	// For ANY_INPUT orders, fetch withdrawal history.
-	var withdrawals *AnyInputWithdrawalsResponse
-	if order.SwapType == "ANY_INPUT" {
-		withdrawals, _ = fetchAnyInputWithdrawals(order.DepositAddr)
-	}
-
 	data := OrderPageData{
 		PageData:      newPageData("Order Status"),
 		Token:         path,
@@ -684,7 +632,6 @@ func handleOrder(w http.ResponseWriter, r *http.Request) {
 		TimeRemaining: timeRemaining,
 		IsTerminal:    isTerminal,
 		StatusStep:    statusStep,
-		Withdrawals:   withdrawals,
 	}
 	data.MetaRefresh = refresh
 	data.FromColor, data.FromColorA = tokenColorPair(order.FromTicker)

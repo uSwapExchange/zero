@@ -91,7 +91,7 @@
     if(!ai||!ao||!btn)return;
     ai.addEventListener('input',function(){if(ai.value)ao.value='';upd();});
     ao.addEventListener('input',function(){if(ao.value)ai.value='';upd();});
-    function upd(){btn.textContent=(!ai.value&&!ao.value)?'Quick Swap \u2192':'Get Quote \u2192';}
+    function upd(){btn.textContent='Get Quote \u2192';}
     upd();
 
     var ci=document.getElementById('slip-custom'),radios=document.querySelectorAll('input[name="slippage"]');

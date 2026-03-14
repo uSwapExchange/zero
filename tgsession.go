@@ -114,22 +114,19 @@ func (sess *tgSession) trackMsg(msgID int) {
 }
 
 // isComplete returns true when all required swap fields are filled.
-// Amount is optional — if neither Amount nor AmountOut is set, ANY_INPUT mode is used.
 func (sess *tgSession) isComplete() bool {
 	return sess.FromTicker != "" && sess.ToTicker != "" &&
+		(sess.Amount != "" || sess.AmountOut != "") &&
 		sess.RefundAddr != "" && sess.RecvAddr != ""
 }
 
 // swapType returns the swap type based on which amount fields are set.
 // When both are set, Amount (send) takes priority → FLEX_INPUT.
 func (sess *tgSession) swapType() string {
-	if sess.Amount != "" {
-		return "FLEX_INPUT"
-	}
-	if sess.AmountOut != "" {
+	if sess.AmountOut != "" && sess.Amount == "" {
 		return "EXACT_OUTPUT"
 	}
-	return "ANY_INPUT"
+	return "FLEX_INPUT"
 }
 
 // startCleanup starts a goroutine that removes stale sessions.

@@ -45,7 +45,6 @@ Type **@botusername** in any Telegram chat (group or private) to get swap sugges
 - **Set Refund Address** — Enter your refund wallet address (on the source chain)
 - **Set Receive Address** — Enter your destination wallet address
 - **Get Quote** — Preview the swap rate before confirming
-- **Quick Swap** — Start a flexible swap where you can send any amount
 - **Open Quote in App** — Open the swap in the web interface for a full-screen view
 
 ## What does "Refresh Status" do?

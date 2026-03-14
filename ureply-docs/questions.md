@@ -32,10 +32,6 @@ Slippage is the maximum price change you'll accept between when you get a quote 
 
 The spread is the difference between the spot price and the rate offered by the market maker. It's not a fee that uSwap Zero charges — it's simply the cost of the trade on the open market. uSwap Zero adds zero markup on top of this. What you see in the quote is what the market is offering.
 
-## What does "Quick Swap" or ANY_INPUT mean?
-
-If you leave both amount fields empty, you enter Quick Swap mode. You'll get a deposit address where you can send any amount of the source token. Each deposit gets converted at the current market rate. This is great for when you don't know the exact amount in advance, or you want to send multiple deposits to the same address.
-
 ## Do I need JavaScript enabled?
 
 No. The web interface works entirely without JavaScript. This is a privacy feature — there's no client-side tracking, analytics, or third-party scripts. Everything is rendered server-side. The page works the same whether JS is on or off.
@@ -58,7 +54,7 @@ Once you confirm a swap and receive a deposit address, you can cancel by simply 
 
 ## What happens if I send the wrong amount?
 
-If you specified an exact send amount but send a different amount, the swap may still process depending on the mode. In Quick Swap (ANY_INPUT) mode, any amount works. In other modes, sending the wrong amount may result in a refund to your refund address.
+If you specified an exact send amount but send a different amount, the swap may still process depending on the mode. In FLEX_INPUT mode, the swap accepts a range around your quoted amount. If the amount is too far off, it may result in a refund to your refund address.
 
 ## How do I know my swap completed?
 

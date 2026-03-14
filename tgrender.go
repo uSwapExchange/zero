@@ -136,15 +136,6 @@ type QuoteCardData struct {
 	SwapType     string // FLEX_INPUT or EXACT_OUTPUT
 }
 
-// AnyInputCardData holds data for renderAnyInputDepositCardMono.
-type AnyInputCardData struct {
-	FromTicker string
-	ToTicker   string
-	Network    string
-	RefundAddr string
-	RecvAddr   string
-}
-
 // DepositCardData holds data for renderDepositCardMono.
 type DepositCardData struct {
 	FromTicker string
@@ -315,39 +306,6 @@ func renderDepositCardMono(p DepositCardData) string {
 	}
 
 	// Addresses (truncated)
-	if p.RefundAddr != "" || p.RecvAddr != "" {
-		sb.WriteString(cardMid() + "\n")
-		if p.RefundAddr != "" {
-			sb.WriteString(cardRowKV("REFUND", safeRunes(truncAddr(p.RefundAddr), 16)) + "\n")
-		}
-		if p.RecvAddr != "" {
-			sb.WriteString(cardRowKV("RECEIVE", safeRunes(truncAddr(p.RecvAddr), 16)) + "\n")
-		}
-	}
-
-	sb.WriteString(cardBot())
-	return sb.String()
-}
-
-// renderAnyInputDepositCardMono builds the monospace deposit card for ANY_INPUT mode.
-// Note: deposit address is NOT included — callers add it as a separate <code> block.
-func renderAnyInputDepositCardMono(p AnyInputCardData) string {
-	var sb strings.Builder
-
-	sb.WriteString(cardTop() + "\n")
-	sb.WriteString(cardRow(" Ø USWAP ZERO \u2014 QUICK SWAP") + "\n")
-	sb.WriteString(cardMid() + "\n")
-
-	fromT := safeRunes(p.FromTicker, 8)
-	toT := safeRunes(p.ToTicker, 8)
-
-	sb.WriteString(cardRowKV("SEND", "any "+fromT) + "\n")
-	sb.WriteString(cardRowKV("RECEIVE", "~ market "+toT) + "\n")
-	sb.WriteString(cardMid() + "\n")
-
-	network := safeRunes(p.Network, 18)
-	sb.WriteString(cardRowKV("NETWORK", network) + "\n")
-
 	if p.RefundAddr != "" || p.RecvAddr != "" {
 		sb.WriteString(cardMid() + "\n")
 		if p.RefundAddr != "" {
