@@ -139,6 +139,11 @@ func main() {
 	// Generated token icons
 	mux.HandleFunc("/icons/gen/", handleGenIcon)
 
+	// SEO
+	mux.HandleFunc("/robots.txt", handleRobotsTxt)
+	mux.HandleFunc("/sitemap.xml", handleSitemapXML)
+	mux.HandleFunc("/llms.txt", handleLLMSTxt)
+
 	// Pages
 	mux.HandleFunc("/", handleSwap)
 	mux.HandleFunc("/quote", handleQuote)
@@ -148,6 +153,8 @@ func main() {
 	mux.HandleFunc("/how-it-works", handleHowItWorks)
 	mux.HandleFunc("/case-study", handleCaseStudy)
 	mux.HandleFunc("/verify", handleVerify)
+	mux.HandleFunc("/fees", handleFees)
+	mux.HandleFunc("/faq", handleFAQ)
 	mux.HandleFunc("/source", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://github.com/uSwapExchange/zero", http.StatusFound)
 	})

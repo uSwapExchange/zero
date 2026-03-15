@@ -1,0 +1,98 @@
+{{template "head" .}}
+<div class="page-content page-content--wide">
+
+  <a href="/" class="back-link">&larr; Back to Swap</a>
+
+  <div class="article-header">
+    <h1>Fees</h1>
+    <p>uSwap Zero charges nothing. Here's exactly what you pay.</p>
+  </div>
+
+  <div class="fee-hero glass-card mb-24">
+    <div class="fee-hero__amount">$0</div>
+    <div class="fee-hero__label">uSwap Zero markup on every swap</div>
+  </div>
+
+  <div class="article-section">
+    <h2>Fee Breakdown</h2>
+    <div class="fee-card">
+      <div class="fee-row">
+        <span class="fee-row__label">uSwap Zero fee</span>
+        <span class="fee-row__value fee-row__value--free"><span class="fee-zero">$0</span></span>
+      </div>
+      <div class="fee-row">
+        <span class="fee-row__label">Platform commission</span>
+        <span class="fee-row__value fee-row__value--free"><span class="fee-zero">$0</span></span>
+      </div>
+      <div class="fee-row">
+        <span class="fee-row__label">Hidden markup</span>
+        <span class="fee-row__value fee-row__value--free"><span class="fee-zero">$0</span></span>
+      </div>
+      <div class="fee-row fee-row--total">
+        <span class="fee-row__label">Market maker spread</span>
+        <span class="fee-row__value">~0.1&ndash;0.5%</span>
+      </div>
+      <p class="fee-note">The spread is the natural difference between a market maker's buy and sell price. It exists on every exchange. We add nothing on top.</p>
+    </div>
+  </div>
+
+  <div class="article-section">
+    <h2>How We Compare</h2>
+    <p>Most crypto swap services add a hidden markup on top of the market maker spread. Here's what they don't tell you:</p>
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Markup</th>
+          <th>Tracking</th>
+          <th>Open Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>uSwap Zero</strong></td>
+          <td class="highlight">0%</td>
+          <td class="highlight">None</td>
+          <td class="highlight">Yes</td>
+        </tr>
+        <tr>
+          <td>ChangeNow</td>
+          <td>0.25&ndash;0.5%</td>
+          <td>Full analytics</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>SimpleSwap</td>
+          <td>~0.5%</td>
+          <td>Full analytics</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>StealthEX</td>
+          <td>0.5&ndash;1%</td>
+          <td>Full analytics</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>Swap.my</td>
+          <td>0.72%</td>
+          <td>Unknown</td>
+          <td>No</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Our <a href="/case-study">case study</a> proves these markups with on-chain transaction data from the NEAR blockchain.</p>
+  </div>
+
+  <div class="article-section">
+    <h2>Why Zero Fees?</h2>
+    <p>uSwap Zero is open-source software, not a business extracting value from your trades. We connect you directly to NEAR Intents market makers at their native rates. No middleman markup.</p>
+    <p>Every swap is verifiable. The source code is public. The fees are zero. If that ever changes, you'll see it in the code.</p>
+  </div>
+
+  <div class="text-center mt-32 mb-24">
+    <a href="/" class="btn btn--primary">Try a Zero-Fee Swap &rarr;</a>
+  </div>
+
+</div>
+{{template "footer" .}}

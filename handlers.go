@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"html/template"
 	"fmt"
 	"log"
 	"math"
@@ -66,10 +67,14 @@ type PageData struct {
 	FromColorA  string
 	ToColor     string
 	ToColorA    string
-	CommitHash  string
-	BuildTime   string
-	BuildLogURL string
-	OnionURL    string
+	CommitHash     string
+	BuildTime      string
+	BuildLogURL    string
+	OnionURL       string
+	Description    string
+	CanonicalPath  string
+	StructuredData template.HTML
+	NoIndex        bool
 }
 
 func newPageData(title string) PageData {
@@ -229,6 +234,10 @@ func handleSwap(w http.ResponseWriter, r *http.Request) {
 	// Look up token info for display
 	data.FromToken = findToken(data.From, data.FromNet)
 	data.ToToken = findToken(data.To, data.ToNet)
+
+	data.Description = "Swap 140+ cryptocurrencies across 29 blockchains with zero fees, zero tracking, and zero hidden markup. Open source and verifiable."
+	data.CanonicalPath = "/"
+	data.StructuredData = homepageSchema
 
 	// Filter networks if search is active
 	if data.SearchFrom != "" || data.SearchTo != "" {
@@ -430,6 +439,7 @@ func handleQuote(w http.ResponseWriter, r *http.Request) {
 	data.FromColor, data.FromColorA = tokenColorPair(fromTicker)
 	data.ToColor, data.ToColorA = tokenColorPair(toTicker)
 
+	data.NoIndex = true
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	templates.ExecuteTemplate(w, "quote.html", data)
 }
@@ -634,6 +644,7 @@ func handleOrder(w http.ResponseWriter, r *http.Request) {
 		StatusStep:    statusStep,
 	}
 	data.MetaRefresh = refresh
+	data.NoIndex = true
 	data.FromColor, data.FromColorA = tokenColorPair(order.FromTicker)
 	data.ToColor, data.ToColorA = tokenColorPair(order.ToTicker)
 
@@ -659,8 +670,11 @@ func handleCurrencies(w http.ResponseWriter, r *http.Request) {
 		totalCount += len(ng.Tokens)
 	}
 
+	pd := newPageData("Supported Currencies")
+	pd.Description = "Browse all supported tokens on uSwap Zero. Swap any pair across 29 blockchains with zero fees and zero tracking."
+	pd.CanonicalPath = "/currencies"
 	data := CurrenciesPageData{
-		PageData:   newPageData("Supported Currencies"),
+		PageData:   pd,
 		Networks:   networks,
 		TotalCount: totalCount,
 		Search:     search,
@@ -672,8 +686,11 @@ func handleCurrencies(w http.ResponseWriter, r *http.Request) {
 
 // handleHowItWorks renders the educational page.
 func handleHowItWorks(w http.ResponseWriter, r *http.Request) {
+	pd := newPageData("How It Works")
+	pd.Description = "How uSwap Zero works: choose tokens, get a quote, send your deposit, receive your swap. Zero fees, zero JavaScript, fully open source."
+	pd.CanonicalPath = "/how-it-works"
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	templates.ExecuteTemplate(w, "how_it_works.html", newPageData("How It Works"))
+	templates.ExecuteTemplate(w, "how_it_works.html", pd)
 }
 
 // ResellerStats holds formatted display strings for a single reseller.
@@ -759,8 +776,12 @@ func initCaseStudy() {
 
 // handleCaseStudy renders the competitor analysis page.
 func handleCaseStudy(w http.ResponseWriter, r *http.Request) {
+	pd := newPageData("The Crypto Swap Reseller Problem")
+	pd.Description = "On-chain evidence reveals hidden fees in crypto swap resellers. Data from NEAR Intents shows how services charge secret markups."
+	pd.CanonicalPath = "/case-study"
+	pd.StructuredData = caseStudySchema
 	data := CaseStudyPageData{
-		PageData: newPageData("The Crypto Swap Reseller Problem"),
+		PageData: pd,
 		Eagle:    caseStudyData.Eagle,
 		Lizard:   caseStudyData.Lizard,
 		SwapMy:   caseStudyData.SwapMy,
@@ -821,8 +842,11 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 		envVars = append(envVars, EnvVarStatus{Key: k, Set: os.Getenv(k) != ""})
 	}
 
+	pd := newPageData("Verify")
+	pd.Description = "Verify uSwap Zero's deployment. Compare the live binary against the public source code, build logs, and commit hash."
+	pd.CanonicalPath = "/verify"
 	data := VerifyPageData{
-		PageData:  newPageData("Verify"),
+		PageData:  pd,
 		GoVersion: goVersion,
 		Uptime:    uptime,
 		Requests:  reqs,
@@ -1074,4 +1098,112 @@ func formatRate(rate float64) string {
 	}
 	// Very small rate
 	return fmt.Sprintf("%.8f", math.Abs(rate))
+}
+
+// ──────────────────────────────────────────────────────────────
+// SEO: Structured data schemas
+// ──────────────────────────────────────────────────────────────
+
+var homepageSchema = template.HTML(`<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"uSwap Exchange","url":"https://zero.uswap.net","logo":"https://zero.uswap.net/static/apple-touch-icon.png","sameAs":["https://github.com/uSwapExchange/zero","https://t.me/uSwapZero"]},{"@type":"WebApplication","name":"uSwap Zero","url":"https://zero.uswap.net","applicationCategory":"FinanceApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Zero-fee, zero-tracking, open-source cryptocurrency swap. 140+ tokens across 29+ blockchains with no markup and no JavaScript tracking."}]}
+</script>`)
+
+var caseStudySchema = template.HTML(`<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"The Crypto Swap Reseller Problem","description":"On-chain evidence reveals hidden fees in crypto swap resellers using NEAR Intents.","author":{"@type":"Organization","name":"uSwap Exchange"},"publisher":{"@type":"Organization","name":"uSwap Exchange","logo":{"@type":"ImageObject","url":"https://zero.uswap.net/static/apple-touch-icon.png"}},"mainEntityOfPage":"https://zero.uswap.net/case-study"}
+</script>`)
+
+var faqSchema = template.HTML(`<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is uSwap Zero?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is a zero-fee, zero-tracking, open-source crypto swap frontend. It lets you swap 140+ cryptocurrencies across 29+ blockchains with no markup, no hidden fees, and no JavaScript tracking."}},{"@type":"Question","name":"Are there really no fees?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero charges zero markup. The only cost is the market maker spread, the small difference between buy and sell prices that exists on every exchange. We add nothing on top."}},{"@type":"Question","name":"Which cryptocurrencies are supported?","acceptedAnswer":{"@type":"Answer","text":"Over 140 tokens across 29+ blockchains including Bitcoin, Ethereum, Solana, NEAR, Polygon, Arbitrum, Optimism, Avalanche, BNB Chain, and more."}},{"@type":"Question","name":"How long does a swap take?","acceptedAnswer":{"@type":"Answer","text":"Most swaps complete in 1 to 30 minutes. Fast chains like Solana and NEAR take about 1 minute; Bitcoin takes around 30 minutes due to block confirmation times."}},{"@type":"Question","name":"Is uSwap Zero safe?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is non-custodial and open source. Your funds go directly through the NEAR Intents protocol. The entire source code is public, the build is verifiable, and there is zero JavaScript tracking."}},{"@type":"Question","name":"What happens if something goes wrong?","acceptedAnswer":{"@type":"Answer","text":"If a swap cannot be completed, your funds are automatically refunded to your refund address by the NEAR Intents protocol."}},{"@type":"Question","name":"Why is there no JavaScript tracking?","acceptedAnswer":{"@type":"Answer","text":"Privacy. Most swap services embed analytics that track every click and wallet address. uSwap Zero uses zero analytics, zero cookies, and zero external requests."}},{"@type":"Question","name":"Is uSwap Zero open source?","acceptedAnswer":{"@type":"Answer","text":"Yes. The complete source code is available on GitHub under the MIT License. It is a single Go binary with zero external dependencies."}},{"@type":"Question","name":"Do you collect any personal data?","acceptedAnswer":{"@type":"Answer","text":"No. Zero personal data is collected. No analytics, no cookies, no IP logging, no wallet tracking. Swap details are encrypted in your order URL and never stored on our servers."}},{"@type":"Question","name":"What is the market maker spread?","acceptedAnswer":{"@type":"Answer","text":"The spread is the difference between what a market maker pays for a token and what they sell it for. Unlike other swap services, uSwap Zero adds zero additional markup on top of this spread."}}]}
+</script>`)
+
+var feesSchema = template.HTML(`<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does uSwap Zero charge any fees?","acceptedAnswer":{"@type":"Answer","text":"No. uSwap Zero charges zero fees, zero markup, and zero commissions. The only cost is the market maker spread, the small difference between buy and sell prices that exists on every exchange."}},{"@type":"Question","name":"What is the market maker spread?","acceptedAnswer":{"@type":"Answer","text":"The spread is the natural difference between a market maker's buy and sell price. It typically ranges from 0.1% to 0.5% depending on the token pair and liquidity. This cost exists on every exchange. uSwap Zero adds nothing on top of it."}},{"@type":"Question","name":"How is uSwap Zero different from other swap services?","acceptedAnswer":{"@type":"Answer","text":"Most crypto swap services add a hidden markup of 0.25% to 4% on top of the market maker spread. uSwap Zero adds nothing. Our case study proves this with on-chain transaction data."}}]}
+</script>`)
+
+// ──────────────────────────────────────────────────────────────
+// SEO: New content pages
+// ──────────────────────────────────────────────────────────────
+
+// handleFees renders the fee transparency page.
+func handleFees(w http.ResponseWriter, r *http.Request) {
+	pd := newPageData("Fees")
+	pd.Description = "uSwap Zero charges zero fees. No markup, no hidden charges — just the market maker spread. See exactly what you pay."
+	pd.CanonicalPath = "/fees"
+	pd.StructuredData = feesSchema
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	templates.ExecuteTemplate(w, "fees.html", pd)
+}
+
+// handleFAQ renders the frequently asked questions page.
+func handleFAQ(w http.ResponseWriter, r *http.Request) {
+	pd := newPageData("FAQ")
+	pd.Description = "Common questions about uSwap Zero: how swaps work, security, supported tokens, fees, and privacy."
+	pd.CanonicalPath = "/faq"
+	pd.StructuredData = faqSchema
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	templates.ExecuteTemplate(w, "faq.html", pd)
+}
+
+// ──────────────────────────────────────────────────────────────
+// SEO: Machine-readable meta pages
+// ──────────────────────────────────────────────────────────────
+
+// handleRobotsTxt serves crawl directives.
+func handleRobotsTxt(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write([]byte("User-agent: *\n" +
+		"Allow: /\n" +
+		"Disallow: /api/\n" +
+		"Disallow: /tg/\n" +
+		"Disallow: /wrapper-logs\n" +
+		"Disallow: /order/\n" +
+		"Disallow: /quote\n" +
+		"Disallow: /swap\n" +
+		"\n" +
+		"Sitemap: https://zero.uswap.net/sitemap.xml\n"))
+}
+
+// handleSitemapXML serves the XML sitemap.
+func handleSitemapXML(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://zero.uswap.net/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://zero.uswap.net/currencies</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://zero.uswap.net/how-it-works</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://zero.uswap.net/fees</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://zero.uswap.net/case-study</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://zero.uswap.net/faq</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://zero.uswap.net/verify</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+</urlset>`))
+}
+
+// handleLLMSTxt serves AI crawler guidance.
+func handleLLMSTxt(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write([]byte("# uSwap Zero\n" +
+		"\n" +
+		"> Zero-fee, zero-tracking, open-source crypto swap frontend.\n" +
+		"\n" +
+		"uSwap Zero lets you swap 140+ cryptocurrencies across 29+ blockchains\n" +
+		"with no fees, no tracking, and no hidden markup. Powered by NEAR Intents protocol.\n" +
+		"\n" +
+		"## Key Facts\n" +
+		"\n" +
+		"- Zero fees: no markup, no commissions, no hidden charges\n" +
+		"- Zero tracking: no analytics, no cookies, no JavaScript tracking\n" +
+		"- Open source: MIT License, single Go binary, zero external dependencies\n" +
+		"- Non-custodial: funds go directly through NEAR Intents protocol\n" +
+		"- Verifiable: public source code, reproducible builds\n" +
+		"\n" +
+		"## Pages\n" +
+		"\n" +
+		"- [Home](https://zero.uswap.net/): Swap form for 140+ tokens\n" +
+		"- [Currencies](https://zero.uswap.net/currencies): Full list of supported tokens and networks\n" +
+		"- [How It Works](https://zero.uswap.net/how-it-works): Step-by-step swap process\n" +
+		"- [Fees](https://zero.uswap.net/fees): Fee transparency — we charge nothing\n" +
+		"- [Case Study](https://zero.uswap.net/case-study): On-chain evidence of hidden fees in competitor swap services\n" +
+		"- [FAQ](https://zero.uswap.net/faq): Common questions about swaps, fees, privacy, and security\n" +
+		"- [Verify](https://zero.uswap.net/verify): Deployment verification and build metadata\n" +
+		"- [Source Code](https://github.com/uSwapExchange/zero): Complete source on GitHub\n"))
 }

@@ -1452,3 +1452,75 @@ details.tech-details[open] summary::before { content: '▾ '; }
   .metadata-row { flex-direction: column; gap: 4px; }
   .metadata-row__value { text-align: left; max-width: 100%; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   FAQ Page
+   ══════════════════════════════════════════════════════════════════ */
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.faq-item {
+  background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(0,0,0,0.40));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 200ms ease;
+}
+.faq-item[open] { border-color: rgba(var(--accent-a), 0.20); }
+.faq-question {
+  display: flex;
+  align-items: center;
+  padding: 18px 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  opacity: 0.90;
+  transition: opacity 140ms;
+}
+.faq-question::-webkit-details-marker { display: none; }
+.faq-question::before {
+  content: '▸';
+  font-size: 0.7rem;
+  margin-right: 12px;
+  opacity: 0.5;
+  transition: transform 140ms ease;
+  flex-shrink: 0;
+}
+.faq-item[open] .faq-question::before { transform: rotate(90deg); }
+.faq-question:hover { opacity: 1; }
+.faq-answer {
+  padding: 0 20px 18px 32px;
+  font-size: 0.82rem;
+  opacity: 0.60;
+  line-height: 1.7;
+}
+.faq-answer p { margin-bottom: 8px; }
+.faq-answer p:last-child { margin-bottom: 0; }
+.faq-answer ul { padding-left: 18px; margin: 8px 0; }
+.faq-answer li { margin-bottom: 4px; }
+.faq-answer a { color: var(--accent); opacity: 0.85; transition: opacity 140ms; }
+.faq-answer a:hover { opacity: 1; }
+
+/* ══════════════════════════════════════════════════════════════════
+   Fees Page
+   ══════════════════════════════════════════════════════════════════ */
+
+.fee-hero {
+  text-align: center;
+  padding: 32px 20px;
+}
+.fee-hero__amount {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--success);
+  letter-spacing: -0.02em;
+}
+.fee-hero__label {
+  font-size: 0.82rem;
+  opacity: 0.50;
+  margin-top: 4px;
+}

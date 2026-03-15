@@ -4,12 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   {{if .MetaRefresh}}<meta http-equiv="refresh" content="{{.MetaRefresh}}">{{end}}
+  {{if .NoIndex}}<meta name="robots" content="noindex, nofollow">{{end}}
+  {{if .Description}}<meta name="description" content="{{.Description}}">{{end}}
   <title>{{.Title}} — uSwap Zero</title>
   <link rel="stylesheet" href="/static/style.css">
   <style>:root{--accent:{{.ToColor}};--accent-a:{{.ToColorA}};--amber:{{.FromColor}};--amber-a:{{.FromColorA}}}</style>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  {{if .CanonicalPath}}<link rel="canonical" href="https://zero.uswap.net{{.CanonicalPath}}">{{end}}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="uSwap Zero">
+  <meta property="og:title" content="{{.Title}} — uSwap Zero">
+  {{if .Description}}<meta property="og:description" content="{{.Description}}">{{end}}
+  {{if .CanonicalPath}}<meta property="og:url" content="https://zero.uswap.net{{.CanonicalPath}}">{{end}}
+  <meta property="og:image" content="https://zero.uswap.net/static/apple-touch-icon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{.Title}} — uSwap Zero">
+  {{if .Description}}<meta name="twitter:description" content="{{.Description}}">{{end}}
+  <meta name="twitter:image" content="https://zero.uswap.net/static/apple-touch-icon.png">
+  {{if .StructuredData}}{{.StructuredData}}{{end}}
 </head>
 <body>
 <div class="page-wrapper">
@@ -22,7 +36,11 @@
     <span class="footer-dot">&middot;</span>
     <a href="/how-it-works">How it Works</a>
     <span class="footer-dot">&middot;</span>
+    <a href="/fees">Fees</a>
+    <span class="footer-dot">&middot;</span>
     <a href="/case-study">Case Study</a>
+    <span class="footer-dot">&middot;</span>
+    <a href="/faq">FAQ</a>
     <span class="footer-dot">&middot;</span>
     <a href="/verify">Verify</a>
     <span class="footer-dot">&middot;</span>
