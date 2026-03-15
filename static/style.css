@@ -192,6 +192,17 @@ code, pre, .mono {
   margin: 0 auto 8px;
   opacity: 0.95;
 }
+.hero-announcement {
+  font-size: 0.78rem;
+  opacity: 0.55;
+  margin-bottom: 2px;
+}
+.hero-announcement a {
+  color: var(--accent);
+  opacity: 0.85;
+  transition: opacity 140ms;
+}
+.hero-announcement a:hover { opacity: 1; }
 .hero-title {
   font-size: 1.8rem;
   font-weight: 700;
