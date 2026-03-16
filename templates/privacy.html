@@ -1,0 +1,62 @@
+{{template "head" .}}
+<div class="page-content page-content--wide">
+
+  <a href="/" class="back-link">&larr; Back to Swap</a>
+
+  <div class="article-header">
+    <h1>Privacy Policy</h1>
+    <p>Short version: we collect nothing.</p>
+  </div>
+
+  <div class="article-section">
+    <h2>No KYC. No Accounts. No Sign-Up.</h2>
+    <p>uSwap Zero requires no identity verification, no account creation, and no personal information of any kind. There is nothing to register, no email to verify, and no documents to upload. You swap directly &mdash; that's it.</p>
+  </div>
+
+  <div class="article-section">
+    <h2>No Data Collection</h2>
+    <p>uSwap Zero collects <strong>zero personal data</strong>. Specifically:</p>
+    <ul>
+      <li>No analytics or tracking scripts</li>
+      <li>No cookies</li>
+      <li>No IP address logging</li>
+      <li>No wallet address storage</li>
+      <li>No browser fingerprinting</li>
+      <li>No third-party requests</li>
+    </ul>
+    <p>There is no JavaScript tracking on this site. The page source proves it.</p>
+  </div>
+
+  <div class="article-section">
+    <h2>Order Data</h2>
+    <p>When you create a swap, the order details (deposit address, amounts, wallet addresses) are encrypted into your order URL using AES-256-GCM. This data exists only in the URL itself &mdash; it is <strong>never stored on our servers</strong>. When the URL expires or you close the page, the data is gone.</p>
+    <p>We have no database. There is no order history, no transaction log, and no way for us to look up past swaps.</p>
+  </div>
+
+  <div class="article-section">
+    <h2>Non-Custodial</h2>
+    <p>Your funds go directly through the <a href="https://defuse.org/">NEAR Intents</a> protocol. uSwap Zero never holds, controls, or has access to your funds at any point. The swap is between you and the protocol's market makers.</p>
+  </div>
+
+  <div class="article-section">
+    <h2>Open Source</h2>
+    <p>Every claim on this page is verifiable. The <a href="/source">complete source code</a> is public under the MIT License. You can audit the entire application &mdash; it is a single Go binary with zero external dependencies. The deployed binary can be verified against the source at <a href="/verify">/verify</a>.</p>
+  </div>
+
+  <div class="article-section">
+    <h2>Third Parties</h2>
+    <p>uSwap Zero makes requests only to the NEAR Intents API to fetch quotes and execute swaps. No data is shared with analytics providers, advertisers, or any other third party. There are no embedded scripts, fonts, or resources from external domains.</p>
+  </div>
+
+  <div class="article-section">
+    <h2>Tor</h2>
+    <p>uSwap Zero is available as a Tor hidden service for users who want additional network-level privacy.{{if .OnionURL}} The current .onion address is listed in the footer.{{end}}</p>
+  </div>
+
+  <div class="article-section">
+    <h2>Changes</h2>
+    <p>If this policy ever changes, the change will be visible in the <a href="/source">public git history</a>. There is no way to silently change it.</p>
+  </div>
+
+</div>
+{{template "footer" .}}

@@ -1113,7 +1113,7 @@ var caseStudySchema = template.HTML(`<script type="application/ld+json">
 </script>`)
 
 var faqSchema = template.HTML(`<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is uSwap Zero?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is a zero-fee, zero-tracking, open-source crypto swap frontend. It lets you swap 140+ cryptocurrencies across 29+ blockchains with no markup, no hidden fees, and no JavaScript tracking."}},{"@type":"Question","name":"Are there really no fees?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero charges zero markup. The only cost is the market maker spread, the small difference between buy and sell prices that exists on every exchange. We add nothing on top."}},{"@type":"Question","name":"Which cryptocurrencies are supported?","acceptedAnswer":{"@type":"Answer","text":"Over 140 tokens across 29+ blockchains including Bitcoin, Ethereum, Solana, NEAR, Polygon, Arbitrum, Optimism, Avalanche, BNB Chain, and more."}},{"@type":"Question","name":"How long does a swap take?","acceptedAnswer":{"@type":"Answer","text":"Most swaps complete in 1 to 30 minutes. Fast chains like Solana and NEAR take about 1 minute; Bitcoin takes around 30 minutes due to block confirmation times."}},{"@type":"Question","name":"Is uSwap Zero safe?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is non-custodial and open source. Your funds go directly through the NEAR Intents protocol. The entire source code is public, the build is verifiable, and there is zero JavaScript tracking."}},{"@type":"Question","name":"What happens if something goes wrong?","acceptedAnswer":{"@type":"Answer","text":"If a swap cannot be completed, your funds are automatically refunded to your refund address by the NEAR Intents protocol."}},{"@type":"Question","name":"Why is there no JavaScript tracking?","acceptedAnswer":{"@type":"Answer","text":"Privacy. Most swap services embed analytics that track every click and wallet address. uSwap Zero uses zero analytics, zero cookies, and zero external requests."}},{"@type":"Question","name":"Is uSwap Zero open source?","acceptedAnswer":{"@type":"Answer","text":"Yes. The complete source code is available on GitHub under the MIT License. It is a single Go binary with zero external dependencies."}},{"@type":"Question","name":"Do you collect any personal data?","acceptedAnswer":{"@type":"Answer","text":"No. Zero personal data is collected. No analytics, no cookies, no IP logging, no wallet tracking. Swap details are encrypted in your order URL and never stored on our servers."}},{"@type":"Question","name":"What is the market maker spread?","acceptedAnswer":{"@type":"Answer","text":"The spread is the difference between what a market maker pays for a token and what they sell it for. Unlike other swap services, uSwap Zero adds zero additional markup on top of this spread."}}]}
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is uSwap Zero?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is a zero-fee, zero-tracking, open-source crypto swap frontend. It lets you swap 140+ cryptocurrencies across 29+ blockchains with no markup, no hidden fees, and no JavaScript tracking."}},{"@type":"Question","name":"Is KYC required?","acceptedAnswer":{"@type":"Answer","text":"No. uSwap Zero requires no KYC, no identity verification, no account, and no sign-up. There is nothing to register, no email to provide, and no documents to upload. Just pick your tokens, enter your wallet addresses, and swap."}},{"@type":"Question","name":"Are there really no fees?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero charges zero markup. The only cost is the market maker spread, the small difference between buy and sell prices that exists on every exchange. We add nothing on top."}},{"@type":"Question","name":"Which cryptocurrencies are supported?","acceptedAnswer":{"@type":"Answer","text":"Over 140 tokens across 29+ blockchains including Bitcoin, Ethereum, Solana, NEAR, Polygon, Arbitrum, Optimism, Avalanche, BNB Chain, and more."}},{"@type":"Question","name":"How long does a swap take?","acceptedAnswer":{"@type":"Answer","text":"Most swaps complete in 1 to 30 minutes. Fast chains like Solana and NEAR take about 1 minute; Bitcoin takes around 30 minutes due to block confirmation times."}},{"@type":"Question","name":"Is uSwap Zero safe?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is non-custodial and open source. Your funds go directly through the NEAR Intents protocol. The entire source code is public, the build is verifiable, and there is zero JavaScript tracking."}},{"@type":"Question","name":"What happens if something goes wrong?","acceptedAnswer":{"@type":"Answer","text":"If a swap cannot be completed, your funds are automatically refunded to your refund address by the NEAR Intents protocol."}},{"@type":"Question","name":"Why is there no JavaScript tracking?","acceptedAnswer":{"@type":"Answer","text":"Privacy. Most swap services embed analytics that track every click and wallet address. uSwap Zero uses zero analytics, zero cookies, and zero external requests."}},{"@type":"Question","name":"Is uSwap Zero open source?","acceptedAnswer":{"@type":"Answer","text":"Yes. The complete source code is available on GitHub under the MIT License. It is a single Go binary with zero external dependencies."}},{"@type":"Question","name":"Do you collect any personal data?","acceptedAnswer":{"@type":"Answer","text":"No. Zero personal data is collected. No analytics, no cookies, no IP logging, no wallet tracking. Swap details are encrypted in your order URL and never stored on our servers."}},{"@type":"Question","name":"What is the market maker spread?","acceptedAnswer":{"@type":"Answer","text":"The spread is the difference between what a market maker pays for a token and what they sell it for. Unlike other swap services, uSwap Zero adds zero additional markup on top of this spread."}}]}
 </script>`)
 
 var feesSchema = template.HTML(`<script type="application/ld+json">
@@ -1123,6 +1123,24 @@ var feesSchema = template.HTML(`<script type="application/ld+json">
 // ──────────────────────────────────────────────────────────────
 // SEO: New content pages
 // ──────────────────────────────────────────────────────────────
+
+// handlePrivacy renders the privacy policy page.
+func handlePrivacy(w http.ResponseWriter, r *http.Request) {
+	pd := newPageData("Privacy Policy")
+	pd.Description = "uSwap Zero collects zero personal data. No KYC, no accounts, no analytics, no cookies, no IP logging. Fully non-custodial and open source."
+	pd.CanonicalPath = "/privacy"
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	templates.ExecuteTemplate(w, "privacy.html", pd)
+}
+
+// handleTerms renders the terms of service page.
+func handleTerms(w http.ResponseWriter, r *http.Request) {
+	pd := newPageData("Terms of Service")
+	pd.Description = "uSwap Zero terms of service. No KYC, no sign-up, non-custodial, zero fees, open source. Plain language, no legalese."
+	pd.CanonicalPath = "/terms"
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	templates.ExecuteTemplate(w, "terms.html", pd)
+}
 
 // handleFees renders the fee transparency page.
 func handleFees(w http.ResponseWriter, r *http.Request) {
@@ -1175,6 +1193,8 @@ func handleSitemapXML(w http.ResponseWriter, r *http.Request) {
   <url><loc>https://zero.uswap.net/case-study</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://zero.uswap.net/faq</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://zero.uswap.net/verify</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://zero.uswap.net/privacy</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://zero.uswap.net/terms</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
 </urlset>`))
 }
 
@@ -1205,5 +1225,7 @@ func handleLLMSTxt(w http.ResponseWriter, r *http.Request) {
 		"- [Case Study](https://zero.uswap.net/case-study): On-chain evidence of hidden fees in competitor swap services\n" +
 		"- [FAQ](https://zero.uswap.net/faq): Common questions about swaps, fees, privacy, and security\n" +
 		"- [Verify](https://zero.uswap.net/verify): Deployment verification and build metadata\n" +
+		"- [Privacy Policy](https://zero.uswap.net/privacy): No KYC, no data collection, no tracking\n" +
+		"- [Terms of Service](https://zero.uswap.net/terms): Plain language terms, non-custodial, no sign-up\n" +
 		"- [Source Code](https://github.com/uSwapExchange/zero): Complete source on GitHub\n"))
 }

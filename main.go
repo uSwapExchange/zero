@@ -155,6 +155,8 @@ func main() {
 	mux.HandleFunc("/verify", handleVerify)
 	mux.HandleFunc("/fees", handleFees)
 	mux.HandleFunc("/faq", handleFAQ)
+	mux.HandleFunc("/privacy", handlePrivacy)
+	mux.HandleFunc("/terms", handleTerms)
 	mux.HandleFunc("/source", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://github.com/uSwapExchange/zero", http.StatusFound)
 	})
