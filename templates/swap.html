@@ -18,7 +18,7 @@
       <div class="swap-card swap-card--from">
         <div class="swap-card__label">You Send</div>
         <div class="swap-card__row">
-          <a href="/?modal=from&amp;from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;amt_out={{.AmountOut}}&amp;slippage={{.Slippage}}&amp;recipient={{.Recipient}}" class="currency-pill">
+          <a href="/?modal=from&amp;from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;amt_out={{.AmountOut}}&amp;slippage={{.Slippage}}&amp;recipient={{.Recipient}}&amp;refund_addr={{.RefundAddr}}" class="currency-pill">
             <img src="{{iconPath .From}}" alt="" class="currency-pill__icon">
             <span class="currency-pill__ticker">{{.From}}</span>
             <span class="currency-pill__arrow">&#9660;</span>
@@ -31,14 +31,16 @@
 
       <!-- Arrow -->
       <div class="swap-arrow">
-        <div class="swap-arrow__icon">&#8693;</div>
+        <button type="submit" class="swap-arrow__button" formaction="/?flip=1" formmethod="post" formnovalidate aria-label="Swap send and receive sides">
+          <span class="swap-arrow__icon" aria-hidden="true">&#8693;</span>
+        </button>
       </div>
 
       <!-- TO -->
       <div class="swap-card swap-card--to">
         <div class="swap-card__label">You Receive</div>
         <div class="swap-card__row">
-          <a href="/?modal=to&amp;from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;amt_out={{.AmountOut}}&amp;slippage={{.Slippage}}&amp;recipient={{.Recipient}}" class="currency-pill">
+          <a href="/?modal=to&amp;from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;amt_out={{.AmountOut}}&amp;slippage={{.Slippage}}&amp;recipient={{.Recipient}}&amp;refund_addr={{.RefundAddr}}" class="currency-pill">
             <img src="{{iconPath .To}}" alt="" class="currency-pill__icon">
             <span class="currency-pill__ticker">{{.To}}</span>
             <span class="currency-pill__arrow">&#9660;</span>
@@ -76,7 +78,9 @@
           <input type="radio" name="slippage" value="3" id="slip-3" class="pill-radio" {{if eq .Slippage "3"}}checked{{end}}>
           <label for="slip-3" class="pill-label">3%</label>
           <div class="custom-slip">
-            <input type="number" id="slip-custom" class="custom-slip__input" placeholder="Custom" step="0.1" min="0.01" max="50" inputmode="decimal" autocomplete="off" {{if and (ne .Slippage "0.5") (ne .Slippage "1") (ne .Slippage "2") (ne .Slippage "3") (ne .Slippage "")}}value="{{.Slippage}}"{{end}}>
+            <input type="radio" name="slippage" value="custom" id="slip-custom-radio" class="custom-slip__radio" {{if customSlippage .Slippage}}checked{{end}}>
+            <label for="slip-custom-radio" class="custom-slip__label">Custom</label>
+            <input type="number" name="slippage_custom" id="slip-custom" class="custom-slip__input" placeholder="0.1" step="0.1" min="0.01" max="50" inputmode="decimal" autocomplete="off" {{if customSlippage .Slippage}}value="{{.Slippage}}"{{end}}>
             <span class="custom-slip__pct">%</span>
           </div>
         </div>
@@ -86,31 +90,6 @@
     <button type="submit" class="btn btn--primary btn--block" id="submit-btn">Get Quote &rarr;</button>
   </form>
 
-  <script>
-  (function(){
-    var ai=document.getElementById('amount-in'),ao=document.getElementById('amount-out'),btn=document.getElementById('submit-btn');
-    if(!ai||!ao||!btn)return;
-    ai.addEventListener('input',function(){if(ai.value)ao.value='';upd();});
-    ao.addEventListener('input',function(){if(ao.value)ai.value='';upd();});
-    function upd(){btn.textContent='Get Quote \u2192';}
-    upd();
-
-    var ci=document.getElementById('slip-custom'),radios=document.querySelectorAll('input[name="slippage"]');
-    if(!ci)return;
-    ci.addEventListener('input',function(){
-      if(ci.value){radios.forEach(function(r){r.checked=false;});}
-    });
-    radios.forEach(function(r){r.addEventListener('change',function(){if(r.checked)ci.value='';});});
-
-    var form=btn.closest('form');
-    if(form)form.addEventListener('submit',function(){
-      if(ci.value&&!document.querySelector('input[name="slippage"]:checked')){
-        var h=document.createElement('input');h.type='hidden';h.name='slippage';h.value=ci.value;form.appendChild(h);
-      }
-    });
-  })();
-  </script>
-
 </div>
 
 {{/* ── Currency Modal ── */}}
@@ -119,7 +98,7 @@
   <div class="modal-panel">
     <div class="modal-header">
       <span class="modal-title">Select {{if eq .ModalOpen "from"}}Source{{else}}Destination{{end}} Currency</span>
-      <a href="/?from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;amt_out={{.AmountOut}}&amp;slippage={{.Slippage}}&amp;recipient={{.Recipient}}" class="modal-close">&times;</a>
+      <a href="/?from={{.From}}&amp;from_net={{.FromNet}}&amp;to={{.To}}&amp;to_net={{.ToNet}}&amp;amt={{.Amount}}&amp;amt_out={{.AmountOut}}&amp;slippage={{.Slippage}}&amp;recipient={{.Recipient}}&amp;refund_addr={{.RefundAddr}}" class="modal-close">&times;</a>
     </div>
     <div class="modal-search">
       <form method="get" action="/" class="modal-search-form">
@@ -132,6 +111,7 @@
         <input type="hidden" name="amt_out" value="{{.AmountOut}}">
         <input type="hidden" name="slippage" value="{{.Slippage}}">
         <input type="hidden" name="recipient" value="{{.Recipient}}">
+        <input type="hidden" name="refund_addr" value="{{.RefundAddr}}">
         <input type="text" name="{{if eq .ModalOpen "from"}}search_from{{else}}search_to{{end}}" value="{{if eq .ModalOpen "from"}}{{.SearchFrom}}{{else}}{{.SearchTo}}{{end}}" placeholder="Search tokens..." class="modal-search-input" autofocus>
         <button type="submit" class="modal-search-btn">Search</button>
       </form>
@@ -142,7 +122,7 @@
         <summary>{{.Name}} <span class="network-count">({{len .Tokens}})</span></summary>
         <div class="token-grid">
           {{range .Tokens}}
-          <a href="/?{{if eq $.ModalOpen "from"}}from={{.Ticker | upper}}&amp;from_net={{.ChainName | lower}}&amp;to={{$.To}}&amp;to_net={{$.ToNet}}{{else}}from={{$.From}}&amp;from_net={{$.FromNet}}&amp;to={{.Ticker | upper}}&amp;to_net={{.ChainName | lower}}{{end}}&amp;amt={{$.Amount}}&amp;amt_out={{$.AmountOut}}&amp;slippage={{$.Slippage}}&amp;recipient={{$.Recipient}}" class="token-card">
+          <a href="/?{{if eq $.ModalOpen "from"}}from={{.Ticker | upper}}&amp;from_net={{.ChainName | lower}}&amp;to={{$.To}}&amp;to_net={{$.ToNet}}{{else}}from={{$.From}}&amp;from_net={{$.FromNet}}&amp;to={{.Ticker | upper}}&amp;to_net={{.ChainName | lower}}{{end}}&amp;amt={{$.Amount}}&amp;amt_out={{$.AmountOut}}&amp;slippage={{$.Slippage}}&amp;recipient={{$.Recipient}}&amp;refund_addr={{$.RefundAddr}}" class="token-card">
             <img src="{{iconPath .Ticker}}" alt="" class="token-card__icon">
             <span class="token-card__ticker">{{.Ticker | upper}}</span>
             {{if gt .Price 0.0}}<span class="token-card__price">{{formatUSD .Price}}</span>{{end}}

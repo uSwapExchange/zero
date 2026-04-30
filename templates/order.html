@@ -53,9 +53,7 @@
     <div class="deposit-amount">{{.Order.AmountIn}} {{.Order.FromTicker}}</div>
 
     <div class="deposit-address-wrap">
-      <div class="deposit-address" id="deposit-addr">{{.Order.DepositAddr}}</div>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('deposit-addr').textContent.trim())">Copy Address</button>
-      <noscript><p class="text-muted" style="font-size:0.72rem;margin-top:4px;">Select the address above and copy manually.</p></noscript>
+      <div class="deposit-address" tabindex="0">{{.Order.DepositAddr}}</div>
     </div>
 
     {{if .Order.Memo}}

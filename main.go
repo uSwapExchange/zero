@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -17,6 +18,11 @@ var (
 	commitHash  = "development"
 	buildTime   = "unknown"
 	buildLogURL = ""
+)
+
+var (
+	serverStartTime = time.Now()
+	requestCounter  int64
 )
 
 // onionURL is the .onion address for this deployment, set via ONION_URL env var.
@@ -28,7 +34,7 @@ var templateFS embed.FS
 //go:embed static/*
 var staticFS embed.FS
 
-//go:embed data/near_intents_reseller_analysis.json
+//go:embed data/near_intents_fee_analysis.json
 var analysisJSON []byte
 
 var templates *template.Template
@@ -88,14 +94,20 @@ func (rl *rateLimiter) startCleanup() {
 	}()
 }
 
+// incrementRequests tracks request volume for the public /verify page.
+func incrementRequests() {
+	atomic.AddInt64(&requestCounter, 1)
+}
+
 func initTemplates() {
 	funcMap := template.FuncMap{
 		"iconPath": iconPath,
 		"formatUSD": func(price float64) string {
 			return formatUSD(price)
 		},
-		"upper": strings.ToUpper,
-		"lower": strings.ToLower,
+		"upper":          strings.ToUpper,
+		"lower":          strings.ToLower,
+		"customSlippage": customSlippage,
 		"safeHTML": func(s string) template.HTML {
 			return template.HTML(s)
 		},
@@ -112,7 +124,6 @@ func initTemplates() {
 			}
 			return addr[:8] + "..." + addr[len(addr)-6:]
 		},
-		"sortIndicator": sortIndicator,
 	}
 
 	var err error
@@ -161,24 +172,12 @@ func main() {
 		http.Redirect(w, r, "https://github.com/uSwapExchange/zero", http.StatusFound)
 	})
 
-	// JSON API endpoints (for support bot plugins)
-	mux.HandleFunc("/api/order/", handleAPIOrderLookup)
-	mux.HandleFunc("/api/estimate-time", handleAPIEstimateTime)
-
 	// Telegram bot (optional — disabled if TG_BOT_TOKEN is unset)
 	if initTelegramBot() {
 		mux.HandleFunc("/tg/webhook/"+tgWebhookSecret, handleTelegramWebhook)
 		tgSessions.startCleanup()
 		log.Printf("Telegram bot enabled")
 	}
-
-	// Reseller monitor (optional — disabled if TG_MONITOR_GROUP_ID is unset)
-	if initMonitor() {
-		log.Printf("Reseller monitor enabled")
-	}
-
-	// Wrapper logs page
-	mux.HandleFunc("/wrapper-logs", handleWrapperLogs)
 
 	port := os.Getenv("PORT")
 	if port == "" {

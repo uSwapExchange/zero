@@ -2,14 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"html/template"
 	"fmt"
+	"html/template"
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime/debug"
-	"sort"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -60,13 +60,13 @@ func tokenColorPair(ticker string) (string, string) {
 
 // PageData is the base data passed to every template.
 type PageData struct {
-	Title       string
-	Error       string
-	MetaRefresh int // seconds; 0 = no refresh
-	FromColor   string
-	FromColorA  string
-	ToColor     string
-	ToColorA    string
+	Title          string
+	Error          string
+	MetaRefresh    int // seconds; 0 = no refresh
+	FromColor      string
+	FromColorA     string
+	ToColor        string
+	ToColorA       string
 	CommitHash     string
 	BuildTime      string
 	BuildLogURL    string
@@ -112,34 +112,88 @@ type SwapPageData struct {
 	ToToken    *TokenInfo
 }
 
+func firstQueryValue(values url.Values, keys ...string) string {
+	for _, key := range keys {
+		if v := values.Get(key); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func slippageFromValues(values url.Values) string {
+	slippage := strings.TrimSpace(values.Get("slippage"))
+	if slippage == "custom" {
+		return strings.TrimSpace(values.Get("slippage_custom"))
+	}
+	return slippage
+}
+
+func customSlippage(slippage string) bool {
+	switch slippage {
+	case "", "0.5", "1", "2", "3":
+		return false
+	default:
+		return true
+	}
+}
+
+func redirectFlippedSwap(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	params := url.Values{}
+	params.Set("from", r.FormValue("to"))
+	params.Set("from_net", r.FormValue("to_net"))
+	params.Set("to", r.FormValue("from"))
+	params.Set("to_net", r.FormValue("from_net"))
+	if v := strings.TrimSpace(r.FormValue("amount_out")); v != "" {
+		params.Set("amt", v)
+	}
+	if v := strings.TrimSpace(r.FormValue("amount")); v != "" {
+		params.Set("amt_out", v)
+	}
+	if v := strings.TrimSpace(r.FormValue("refund_addr")); v != "" {
+		params.Set("recipient", v)
+	}
+	if v := strings.TrimSpace(r.FormValue("recipient")); v != "" {
+		params.Set("refund_addr", v)
+	}
+	if v := slippageFromValues(r.Form); v != "" {
+		params.Set("slippage", v)
+	}
+	http.Redirect(w, r, "/?"+params.Encode(), http.StatusSeeOther)
+}
+
 // QuotePageData is the data for the quote preview page.
 type QuotePageData struct {
 	PageData
-	From            string
-	FromNet         string
-	FromTicker      string
-	To              string
-	ToNet           string
-	ToTicker        string
-	AmountIn        string
-	AmountInUSD     string
-	AmountOut       string
-	AmountOutUSD    string
-	Rate            string
-	Recipient       string
-	RefundAddr      string
-	Slippage        string
-	SlippageBPS     int
-	CSRFToken       string
-	OriginAsset     string
-	DestAsset       string
-	AtomicAmount    string
-	SpreadUSD       string
-	SpreadPct       string
-	FromToken       *TokenInfo
-	ToToken         *TokenInfo
-	HasJWT          bool   // true if NEAR_INTENTS_JWT is set (0% protocol fee)
-	SwapType        string // FLEX_INPUT or EXACT_OUTPUT
+	From         string
+	FromNet      string
+	FromTicker   string
+	To           string
+	ToNet        string
+	ToTicker     string
+	AmountIn     string
+	AmountInUSD  string
+	AmountOut    string
+	AmountOutUSD string
+	Rate         string
+	Recipient    string
+	RefundAddr   string
+	Slippage     string
+	SlippageBPS  int
+	CSRFToken    string
+	OriginAsset  string
+	DestAsset    string
+	AtomicAmount string
+	SpreadUSD    string
+	SpreadPct    string
+	FromToken    *TokenInfo
+	ToToken      *TokenInfo
+	HasJWT       bool   // true if NEAR_INTENTS_JWT is set (0% protocol fee)
+	SwapType     string // FLEX_INPUT or EXACT_OUTPUT
 }
 
 // OrderPageData is the data for the order status page.
@@ -194,24 +248,30 @@ func handleSwap(w http.ResponseWriter, r *http.Request) {
 		renderError(w, 404, "Not Found", "Page not found.", "Back to Home", "/")
 		return
 	}
+	if r.Method == http.MethodPost && r.URL.Query().Get("flip") != "" {
+		redirectFlippedSwap(w, r)
+		return
+	}
 
 	networks, _ := getNetworkGroups()
+	query := r.URL.Query()
 
 	data := SwapPageData{
 		PageData:   newPageData("uSwap Zero"),
-		From:       r.URL.Query().Get("from"),
-		FromNet:    r.URL.Query().Get("from_net"),
-		To:         r.URL.Query().Get("to"),
-		ToNet:      r.URL.Query().Get("to_net"),
-		Amount:     r.URL.Query().Get("amt"),
-		AmountOut:  r.URL.Query().Get("amt_out"),
-		Recipient:  r.URL.Query().Get("recipient"),
-		Slippage:   r.URL.Query().Get("slippage"),
+		From:       query.Get("from"),
+		FromNet:    query.Get("from_net"),
+		To:         query.Get("to"),
+		ToNet:      query.Get("to_net"),
+		Amount:     firstQueryValue(query, "amt", "amount"),
+		AmountOut:  firstQueryValue(query, "amt_out", "amount_out"),
+		Recipient:  query.Get("recipient"),
+		RefundAddr: query.Get("refund_addr"),
+		Slippage:   slippageFromValues(query),
 		CSRFToken:  generateCSRFToken("quote"),
 		Networks:   networks,
-		SearchFrom: r.URL.Query().Get("search_from"),
-		SearchTo:   r.URL.Query().Get("search_to"),
-		ModalOpen:  r.URL.Query().Get("modal"),
+		SearchFrom: query.Get("search_from"),
+		SearchTo:   query.Get("search_to"),
+		ModalOpen:  query.Get("modal"),
 	}
 
 	// Defaults
@@ -227,6 +287,13 @@ func handleSwap(w http.ResponseWriter, r *http.Request) {
 		data.Slippage = "1"
 	}
 
+	if query.Get("flip") != "" {
+		data.From, data.To = data.To, data.From
+		data.FromNet, data.ToNet = data.ToNet, data.FromNet
+		data.Amount, data.AmountOut = data.AmountOut, data.Amount
+		data.Recipient, data.RefundAddr = data.RefundAddr, data.Recipient
+	}
+
 	// Set accent colors from selected currencies
 	data.FromColor, data.FromColorA = tokenColorPair(data.From)
 	data.ToColor, data.ToColorA = tokenColorPair(data.To)
@@ -235,7 +302,7 @@ func handleSwap(w http.ResponseWriter, r *http.Request) {
 	data.FromToken = findToken(data.From, data.FromNet)
 	data.ToToken = findToken(data.To, data.ToNet)
 
-	data.Description = "Swap 140+ cryptocurrencies across 29 blockchains with zero fees, zero tracking, and zero hidden markup. Open source and verifiable."
+	data.Description = "Swap 140+ cryptocurrencies across 29 blockchains with no uSwap app fee, no tracking, and no application JavaScript. Open source and verifiable."
 	data.CanonicalPath = "/"
 	data.StructuredData = homepageSchema
 
@@ -283,7 +350,7 @@ func handleQuote(w http.ResponseWriter, r *http.Request) {
 	amountOutForm := r.FormValue("amount_out")
 	recipient := strings.TrimSpace(r.FormValue("recipient"))
 	refundAddr := strings.TrimSpace(r.FormValue("refund_addr"))
-	slippage := r.FormValue("slippage")
+	slippage := slippageFromValues(r.Form)
 
 	// Validation (amount is optional — determines swap type)
 	var errors []string
@@ -470,7 +537,7 @@ func handleSwapConfirm(w http.ResponseWriter, r *http.Request) {
 	toNet := r.FormValue("to_net")
 	atomicAmount := r.FormValue("atomic_amount")
 	userAmountIn := r.FormValue("amount_in")   // user's original input
-	userAmountOut := r.FormValue("amount_out")  // user's original output (EXACT_OUTPUT)
+	userAmountOut := r.FormValue("amount_out") // user's original output (EXACT_OUTPUT)
 	recipient := r.FormValue("recipient")
 	refundAddr := r.FormValue("refund_addr")
 	slippageBPS := r.FormValue("slippage_bps")
@@ -671,7 +738,7 @@ func handleCurrencies(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pd := newPageData("Supported Currencies")
-	pd.Description = "Browse all supported tokens on uSwap Zero. Swap any pair across 29 blockchains with zero fees and zero tracking."
+	pd.Description = "Browse all supported tokens on uSwap Zero. Swap any pair across 29 blockchains with no uSwap app fee and no tracking."
 	pd.CanonicalPath = "/currencies"
 	data := CurrenciesPageData{
 		PageData:   pd,
@@ -687,22 +754,22 @@ func handleCurrencies(w http.ResponseWriter, r *http.Request) {
 // handleHowItWorks renders the educational page.
 func handleHowItWorks(w http.ResponseWriter, r *http.Request) {
 	pd := newPageData("How It Works")
-	pd.Description = "How uSwap Zero works: choose tokens, get a quote, send your deposit, receive your swap. Zero fees, zero JavaScript, fully open source."
+	pd.Description = "How uSwap Zero works: choose tokens, get a quote, send your deposit, receive your swap. No uSwap app fee, no JavaScript, fully open source."
 	pd.CanonicalPath = "/how-it-works"
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	templates.ExecuteTemplate(w, "how_it_works.html", pd)
 }
 
-// ResellerStats holds formatted display strings for a single reseller.
-type ResellerStats struct {
-	TotalSwaps   string
-	TotalVolume  string
-	TotalRevenue string
-	FirstTx      string
-	DaysActive   int
-	DailyRevenue string
+// FeeStats holds formatted display strings for a provider in the fee study.
+type FeeStats struct {
+	TotalSwaps    string
+	TotalVolume   string
+	TotalRevenue  string
+	FirstTx       string
+	DaysActive    int
+	DailyRevenue  string
 	UniqueSenders string
-	BiggestUSD   string
+	BiggestUSD    string
 }
 
 // CombinedStats holds formatted combined stats.
@@ -716,9 +783,9 @@ type CombinedStats struct {
 // CaseStudyPageData is the data for the case study page.
 type CaseStudyPageData struct {
 	PageData
-	Eagle    ResellerStats
-	Lizard   ResellerStats
-	SwapMy   ResellerStats
+	Eagle    FeeStats
+	Lizard   FeeStats
+	SwapMy   FeeStats
 	Combined CombinedStats
 }
 
@@ -727,24 +794,24 @@ var caseStudyData CaseStudyPageData
 
 // rawAnalysis is the structure matching the JSON file.
 type rawAnalysis struct {
-	EagleSwap  rawReseller `json:"EagleSwap"`
-	LizardSwap rawReseller `json:"LizardSwap"`
-	SwapMy     rawReseller `json:"SwapMy"`
+	EagleSwap  rawProvider `json:"EagleSwap"`
+	LizardSwap rawProvider `json:"LizardSwap"`
+	SwapMy     rawProvider `json:"SwapMy"`
 }
 
-type rawReseller struct {
-	TotalSwaps     int     `json:"total_swaps"`
-	TotalVolumeUSD float64 `json:"total_volume_usd"`
+type rawProvider struct {
+	TotalSwaps      int     `json:"total_swaps"`
+	TotalVolumeUSD  float64 `json:"total_volume_usd"`
 	TotalRevenueUSD float64 `json:"total_revenue_usd"`
-	UniqueSenders  int     `json:"unique_senders"`
-	FirstTx        string  `json:"first_tx"`
-	DaysActive     int     `json:"days_active"`
+	UniqueSenders   int     `json:"unique_senders"`
+	FirstTx         string  `json:"first_tx"`
+	DaysActive      int     `json:"days_active"`
 	DailyRevenueUSD float64 `json:"daily_revenue_usd"`
-	BiggestSwapUSD float64 `json:"biggest_swap_usd"`
+	BiggestSwapUSD  float64 `json:"biggest_swap_usd"`
 }
 
-func formatResellerStats(r rawReseller) ResellerStats {
-	return ResellerStats{
+func formatFeeStats(r rawProvider) FeeStats {
+	return FeeStats{
 		TotalSwaps:    formatCommas(int64(r.TotalSwaps)),
 		TotalVolume:   formatUSD(r.TotalVolumeUSD),
 		TotalRevenue:  formatUSD(r.TotalRevenueUSD),
@@ -763,9 +830,9 @@ func initCaseStudy() {
 		return
 	}
 
-	caseStudyData.Eagle = formatResellerStats(raw.EagleSwap)
-	caseStudyData.Lizard = formatResellerStats(raw.LizardSwap)
-	caseStudyData.SwapMy = formatResellerStats(raw.SwapMy)
+	caseStudyData.Eagle = formatFeeStats(raw.EagleSwap)
+	caseStudyData.Lizard = formatFeeStats(raw.LizardSwap)
+	caseStudyData.SwapMy = formatFeeStats(raw.SwapMy)
 	caseStudyData.Combined = CombinedStats{
 		TotalVolume:  formatUSD(raw.EagleSwap.TotalVolumeUSD + raw.LizardSwap.TotalVolumeUSD + raw.SwapMy.TotalVolumeUSD),
 		TotalRevenue: formatUSD(raw.EagleSwap.TotalRevenueUSD + raw.LizardSwap.TotalRevenueUSD + raw.SwapMy.TotalRevenueUSD),
@@ -774,10 +841,10 @@ func initCaseStudy() {
 	}
 }
 
-// handleCaseStudy renders the competitor analysis page.
+// handleCaseStudy renders the fee-transparency comparison page.
 func handleCaseStudy(w http.ResponseWriter, r *http.Request) {
-	pd := newPageData("The Crypto Swap Reseller Problem")
-	pd.Description = "On-chain evidence reveals hidden fees in crypto swap resellers. Data from NEAR Intents shows how services charge secret markups."
+	pd := newPageData("Swap Fee Transparency")
+	pd.Description = "A fee-transparency comparison using public NEAR Intents transaction data."
 	pd.CanonicalPath = "/case-study"
 	pd.StructuredData = caseStudySchema
 	data := CaseStudyPageData{
@@ -794,17 +861,17 @@ func handleCaseStudy(w http.ResponseWriter, r *http.Request) {
 // VerifyPageData is the data for the /verify page.
 type VerifyPageData struct {
 	PageData
-	GoVersion   string
-	Uptime      string
-	Requests    string
-	BinarySize  string
-	EnvVars     []EnvVarStatus
+	GoVersion  string
+	Uptime     string
+	Requests   string
+	BinarySize string
+	EnvVars    []EnvVarStatus
 }
 
 // EnvVarStatus shows whether an env var is configured.
 type EnvVarStatus struct {
-	Key   string
-	Set   bool
+	Key string
+	Set bool
 }
 
 // handleVerify renders the deployment verification page.
@@ -832,10 +899,8 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 
 	// Env var status (key names only — never values)
 	envKeys := []string{
-		"ORDER_SECRET", "NEAR_INTENTS_JWT", "NEAR_INTENTS_EXPLORER_JWT", "NEAR_INTENTS_API_URL", "PORT",
+		"ORDER_SECRET", "NEAR_INTENTS_JWT", "NEAR_INTENTS_API_URL", "PORT",
 		"TG_BOT_TOKEN", "TG_APP_URL", "TG_WEBHOOK_SECRET",
-		"TG_MONITOR_GROUP_ID", "TG_MAIN_CHAT_ID",
-		"TG_SWAPMY_THREAD_ID", "TG_EAGLESWAP_THREAD_ID", "TG_LIZARDSWAP_THREAD_ID",
 	}
 	var envVars []EnvVarStatus
 	for _, k := range envKeys {
@@ -846,12 +911,12 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 	pd.Description = "Verify uSwap Zero's deployment. Compare the live binary against the public source code, build logs, and commit hash."
 	pd.CanonicalPath = "/verify"
 	data := VerifyPageData{
-		PageData:  pd,
-		GoVersion: goVersion,
-		Uptime:    uptime,
-		Requests:  reqs,
+		PageData:   pd,
+		GoVersion:  goVersion,
+		Uptime:     uptime,
+		Requests:   reqs,
 		BinarySize: binSize,
-		EnvVars:   envVars,
+		EnvVars:    envVars,
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	templates.ExecuteTemplate(w, "verify.html", data)
@@ -869,193 +934,6 @@ func handleGenIcon(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/svg+xml")
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	fmt.Fprint(w, generateTokenIconSVG(ticker))
-}
-
-// handleAPIOrderLookup decrypts an order token and returns order details as JSON.
-// GET /api/order/{token}
-func handleAPIOrderLookup(w http.ResponseWriter, r *http.Request) {
-	token := strings.TrimPrefix(r.URL.Path, "/api/order/")
-	if token == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(400)
-		json.NewEncoder(w).Encode(map[string]string{"error": "No order token provided."})
-		return
-	}
-
-	order, err := decryptOrderData(token)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(400)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid or expired order token."})
-		return
-	}
-
-	// Fetch live status from NEAR Intents
-	status, _ := fetchStatus(order.DepositAddr, order.Memo)
-	liveStatus := "UNKNOWN"
-	var swapDetails *SwapDetails
-	if status != nil {
-		liveStatus = status.Status
-		swapDetails = status.SwapDetails
-	}
-
-	// Calculate time remaining (only meaningful for non-terminal states)
-	timeRemaining := ""
-	if order.Deadline != "" {
-		dl, err := time.Parse(time.RFC3339, order.Deadline)
-		if err == nil {
-			remaining := time.Until(dl)
-			if remaining > 0 {
-				mins := int(remaining.Minutes())
-				if mins >= 60 {
-					timeRemaining = fmt.Sprintf("%dh %dm", mins/60, mins%60)
-				} else {
-					timeRemaining = fmt.Sprintf("%dm", mins)
-				}
-			} else {
-				timeRemaining = "Expired"
-			}
-		}
-	}
-
-	// Resolve display names for networks
-	fromToken := findToken(order.FromTicker, order.FromNet)
-	toToken := findToken(order.ToTicker, order.ToNet)
-	fromNetwork := order.FromNet
-	toNetwork := order.ToNet
-	if fromToken != nil {
-		fromNetwork = fromToken.ChainName
-	}
-	if toToken != nil {
-		toNetwork = toToken.ChainName
-	}
-
-	// Use actual amounts from swap details if the swap completed
-	amountIn := order.AmountIn
-	amountOut := order.AmountOut
-	if swapDetails != nil {
-		if swapDetails.AmountInFmt != "" {
-			amountIn = swapDetails.AmountInFmt
-		}
-		if swapDetails.AmountOutFmt != "" {
-			amountOut = swapDetails.AmountOutFmt
-		}
-	}
-
-	result := map[string]interface{}{
-		"depositAddress": order.DepositAddr,
-		"memo":           order.Memo,
-		"fromToken":      order.FromTicker,
-		"fromNetwork":    fromNetwork,
-		"toToken":        order.ToTicker,
-		"toNetwork":      toNetwork,
-		"amountIn":       amountIn,
-		"amountOut":      amountOut,
-		"deadline":       order.Deadline,
-		"timeRemaining":  timeRemaining,
-		"correlationId":  order.CorrID,
-		"refundAddress":  order.RefundAddr,
-		"receiveAddress": order.RecvAddr,
-		"swapType":       order.SwapType,
-		"status":         liveStatus,
-	}
-
-	// Include transaction links if available
-	if swapDetails != nil {
-		if len(swapDetails.DestTxs) > 0 {
-			result["destinationTx"] = swapDetails.DestTxs[0].Hash
-			result["destinationExplorerUrl"] = swapDetails.DestTxs[0].ExplorerURL
-		}
-		if swapDetails.RefundReason != "" {
-			result["refundReason"] = swapDetails.RefundReason
-		}
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
-}
-
-// handleAPIEstimateTime returns estimated swap times by blockchain.
-// GET /api/estimate-time?from={chain}&to={chain}
-func handleAPIEstimateTime(w http.ResponseWriter, r *http.Request) {
-	// Typical confirmation times by blockchain (in minutes).
-	// These are conservative estimates for deposit confirmation + swap execution.
-	chainTimes := map[string]int{
-		"btc": 30, "bitcoin": 30,
-		"eth": 5, "ethereum": 5,
-		"sol": 1, "solana": 1,
-		"base": 3,
-		"arb": 2, "arbitrum": 2,
-		"op": 2, "optimism": 2,
-		"pol": 3, "polygon": 3,
-		"avax": 2, "avalanche": 2,
-		"bsc": 2, "bnb chain": 2,
-		"ton": 2,
-		"tron": 3,
-		"near": 1,
-		"sui": 1,
-		"apt": 2, "aptos": 2,
-		"doge": 10, "dogecoin": 10,
-		"ltc": 10, "litecoin": 10,
-		"xrp": 1,
-		"bch": 20, "bitcoin cash": 20,
-		"xlm": 1, "stellar": 1,
-	}
-
-	fromChain := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("from")))
-	toChain := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("to")))
-
-	type chainEstimate struct {
-		Chain   string `json:"chain"`
-		Minutes int    `json:"minutes"`
-		Label   string `json:"label"`
-	}
-
-	formatLabel := func(mins int) string {
-		if mins < 2 {
-			return "~1 minute"
-		}
-		return fmt.Sprintf("~%d minutes", mins)
-	}
-
-	// If specific chains requested, return just those
-	if fromChain != "" || toChain != "" {
-		fromMins := 5 // default
-		toMins := 2   // default (swap execution)
-		if v, ok := chainTimes[fromChain]; ok {
-			fromMins = v
-		}
-		if v, ok := chainTimes[toChain]; ok {
-			toMins = v
-		}
-		totalMins := fromMins + toMins
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"fromChain":     fromChain,
-			"toChain":       toChain,
-			"depositTime":   chainEstimate{Chain: fromChain, Minutes: fromMins, Label: formatLabel(fromMins)},
-			"deliveryTime":  chainEstimate{Chain: toChain, Minutes: toMins, Label: formatLabel(toMins)},
-			"totalEstimate": chainEstimate{Minutes: totalMins, Label: formatLabel(totalMins)},
-		})
-		return
-	}
-
-	// No params: return full table of known chains
-	seen := make(map[string]bool)
-	var all []chainEstimate
-	for chain, mins := range chainTimes {
-		if len(chain) <= 4 && !seen[chain] { // short codes only to avoid duplicates
-			seen[chain] = true
-			all = append(all, chainEstimate{Chain: chain, Minutes: mins, Label: formatLabel(mins)})
-		}
-	}
-	sort.Slice(all, func(i, j int) bool { return all[i].Minutes < all[j].Minutes })
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"chains": all,
-	})
 }
 
 // filterNetworks filters network groups by a search query.
@@ -1105,19 +983,19 @@ func formatRate(rate float64) string {
 // ──────────────────────────────────────────────────────────────
 
 var homepageSchema = template.HTML(`<script type="application/ld+json">
-{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"uSwap Exchange","url":"https://zero.uswap.net","logo":"https://zero.uswap.net/static/apple-touch-icon.png","sameAs":["https://github.com/uSwapExchange/zero","https://t.me/uSwapZero"]},{"@type":"WebApplication","name":"uSwap Zero","url":"https://zero.uswap.net","applicationCategory":"FinanceApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Zero-fee, zero-tracking, open-source cryptocurrency swap. 140+ tokens across 29+ blockchains with no markup and no JavaScript tracking."}]}
+{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"uSwap Exchange","url":"https://zero.uswap.net","logo":"https://zero.uswap.net/static/apple-touch-icon.png","sameAs":["https://github.com/uSwapExchange/zero","https://t.me/uSwapZero"]},{"@type":"WebApplication","name":"uSwap Zero","url":"https://zero.uswap.net","applicationCategory":"FinanceApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"No app fee, zero-tracking, open-source cryptocurrency swap. 140+ tokens across 29+ blockchains with no uSwap app fee and no JavaScript tracking."}]}
 </script>`)
 
 var caseStudySchema = template.HTML(`<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Article","headline":"The Crypto Swap Reseller Problem","description":"On-chain evidence reveals hidden fees in crypto swap resellers using NEAR Intents.","author":{"@type":"Organization","name":"uSwap Exchange"},"publisher":{"@type":"Organization","name":"uSwap Exchange","logo":{"@type":"ImageObject","url":"https://zero.uswap.net/static/apple-touch-icon.png"}},"mainEntityOfPage":"https://zero.uswap.net/case-study"}
+{"@context":"https://schema.org","@type":"Article","headline":"Swap Fee Transparency","description":"A fee-transparency comparison using public NEAR Intents transaction data.","author":{"@type":"Organization","name":"uSwap Exchange"},"publisher":{"@type":"Organization","name":"uSwap Exchange","logo":{"@type":"ImageObject","url":"https://zero.uswap.net/static/apple-touch-icon.png"}},"mainEntityOfPage":"https://zero.uswap.net/case-study"}
 </script>`)
 
 var faqSchema = template.HTML(`<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is uSwap Zero?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is a zero-fee, zero-tracking, open-source crypto swap frontend. It lets you swap 140+ cryptocurrencies across 29+ blockchains with no markup, no hidden fees, and no JavaScript tracking."}},{"@type":"Question","name":"Is KYC required?","acceptedAnswer":{"@type":"Answer","text":"No. uSwap Zero requires no KYC, no identity verification, no account, and no sign-up. There is nothing to register, no email to provide, and no documents to upload. Just pick your tokens, enter your wallet addresses, and swap."}},{"@type":"Question","name":"Are there really no fees?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero charges zero markup. The only cost is the market maker spread, the small difference between buy and sell prices that exists on every exchange. We add nothing on top."}},{"@type":"Question","name":"Which cryptocurrencies are supported?","acceptedAnswer":{"@type":"Answer","text":"Over 140 tokens across 29+ blockchains including Bitcoin, Ethereum, Solana, NEAR, Polygon, Arbitrum, Optimism, Avalanche, BNB Chain, and more."}},{"@type":"Question","name":"How long does a swap take?","acceptedAnswer":{"@type":"Answer","text":"Most swaps complete in 1 to 30 minutes. Fast chains like Solana and NEAR take about 1 minute; Bitcoin takes around 30 minutes due to block confirmation times."}},{"@type":"Question","name":"Is uSwap Zero safe?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is non-custodial and open source. Your funds go directly through the NEAR Intents protocol. The entire source code is public, the build is verifiable, and there is zero JavaScript tracking."}},{"@type":"Question","name":"What happens if something goes wrong?","acceptedAnswer":{"@type":"Answer","text":"If a swap cannot be completed, your funds are automatically refunded to your refund address by the NEAR Intents protocol."}},{"@type":"Question","name":"Why is there no JavaScript tracking?","acceptedAnswer":{"@type":"Answer","text":"Privacy. Most swap services embed analytics that track every click and wallet address. uSwap Zero uses zero analytics, zero cookies, and zero external requests."}},{"@type":"Question","name":"Is uSwap Zero open source?","acceptedAnswer":{"@type":"Answer","text":"Yes. The complete source code is available on GitHub under the MIT License. It is a single Go binary with zero external dependencies."}},{"@type":"Question","name":"Do you collect any personal data?","acceptedAnswer":{"@type":"Answer","text":"No. Zero personal data is collected. No analytics, no cookies, no IP logging, no wallet tracking. Swap details are encrypted in your order URL and never stored on our servers."}},{"@type":"Question","name":"What is the market maker spread?","acceptedAnswer":{"@type":"Answer","text":"The spread is the difference between what a market maker pays for a token and what they sell it for. Unlike other swap services, uSwap Zero adds zero additional markup on top of this spread."}}]}
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is uSwap Zero?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is a no-app-fee, zero-tracking, open-source crypto swap frontend. It lets you swap 140+ cryptocurrencies across 29+ blockchains with no uSwap app fee and no JavaScript tracking."}},{"@type":"Question","name":"Is KYC required?","acceptedAnswer":{"@type":"Answer","text":"No. uSwap Zero requires no KYC, no identity verification, no account, and no sign-up. There is nothing to register, no email to provide, and no documents to upload. Just pick your tokens, enter your wallet addresses, and swap."}},{"@type":"Question","name":"Are there really no fees?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero does not add an app fee or commission. You may still pay the market maker spread and any protocol or network costs surfaced by NEAR Intents."}},{"@type":"Question","name":"Which cryptocurrencies are supported?","acceptedAnswer":{"@type":"Answer","text":"Over 140 tokens across 29+ blockchains including Bitcoin, Ethereum, Solana, NEAR, Polygon, Arbitrum, Optimism, Avalanche, BNB Chain, and more."}},{"@type":"Question","name":"How long does a swap take?","acceptedAnswer":{"@type":"Answer","text":"Most swaps complete in 1 to 30 minutes. Fast chains like Solana and NEAR take about 1 minute; Bitcoin takes around 30 minutes due to block confirmation times."}},{"@type":"Question","name":"Is uSwap Zero safe?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is non-custodial and open source. Your funds go directly through the NEAR Intents protocol. The entire source code is public, the build is verifiable, and there is no JavaScript tracking."}},{"@type":"Question","name":"What happens if something goes wrong?","acceptedAnswer":{"@type":"Answer","text":"If a swap cannot be completed, your funds are automatically refunded to your refund address by the NEAR Intents protocol."}},{"@type":"Question","name":"Why is there no JavaScript tracking?","acceptedAnswer":{"@type":"Answer","text":"Privacy. uSwap Zero uses no analytics, no cookies, and no external browser requests for the swap flow."}},{"@type":"Question","name":"Is uSwap Zero open source?","acceptedAnswer":{"@type":"Answer","text":"Yes. The complete source code is available on GitHub under the MIT License. It is a single Go binary with zero external dependencies."}},{"@type":"Question","name":"Do you collect any personal data?","acceptedAnswer":{"@type":"Answer","text":"No. Zero personal data is collected. No analytics, no cookies, no IP logging, no wallet tracking. Swap details are encrypted in your order URL and never stored on our servers."}},{"@type":"Question","name":"What is the market maker spread?","acceptedAnswer":{"@type":"Answer","text":"The spread is the difference between what a market maker pays for a token and what they sell it for. uSwap Zero does not add its own app fee on top of this spread."}}]}
 </script>`)
 
 var feesSchema = template.HTML(`<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does uSwap Zero charge any fees?","acceptedAnswer":{"@type":"Answer","text":"No. uSwap Zero charges zero fees, zero markup, and zero commissions. The only cost is the market maker spread, the small difference between buy and sell prices that exists on every exchange."}},{"@type":"Question","name":"What is the market maker spread?","acceptedAnswer":{"@type":"Answer","text":"The spread is the natural difference between a market maker's buy and sell price. It typically ranges from 0.1% to 0.5% depending on the token pair and liquidity. This cost exists on every exchange. uSwap Zero adds nothing on top of it."}},{"@type":"Question","name":"How is uSwap Zero different from other swap services?","acceptedAnswer":{"@type":"Answer","text":"Most crypto swap services add a hidden markup of 0.25% to 4% on top of the market maker spread. uSwap Zero adds nothing. Our case study proves this with on-chain transaction data."}}]}
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does uSwap Zero charge any fees?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero does not add an app fee or commission. The remaining costs are the market maker spread and any protocol or network costs surfaced by NEAR Intents."}},{"@type":"Question","name":"What is the market maker spread?","acceptedAnswer":{"@type":"Answer","text":"The spread is the natural difference between a market maker's buy and sell price. It typically ranges from 0.1% to 0.5% depending on the token pair and liquidity."}},{"@type":"Question","name":"How is uSwap Zero different from other swap services?","acceptedAnswer":{"@type":"Answer","text":"uSwap Zero is open source, server rendered, and sends NEAR Intents quote requests with appFees as an empty array."}}]}
 </script>`)
 
 // ──────────────────────────────────────────────────────────────
@@ -1136,7 +1014,7 @@ func handlePrivacy(w http.ResponseWriter, r *http.Request) {
 // handleTerms renders the terms of service page.
 func handleTerms(w http.ResponseWriter, r *http.Request) {
 	pd := newPageData("Terms of Service")
-	pd.Description = "uSwap Zero terms of service. No KYC, no sign-up, non-custodial, zero fees, open source. Plain language, no legalese."
+	pd.Description = "uSwap Zero terms of service. No KYC, no sign-up, non-custodial, no uSwap app fee, open source. Plain language, no legalese."
 	pd.CanonicalPath = "/terms"
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	templates.ExecuteTemplate(w, "terms.html", pd)
@@ -1145,7 +1023,7 @@ func handleTerms(w http.ResponseWriter, r *http.Request) {
 // handleFees renders the fee transparency page.
 func handleFees(w http.ResponseWriter, r *http.Request) {
 	pd := newPageData("Fees")
-	pd.Description = "uSwap Zero charges zero fees. No markup, no hidden charges — just the market maker spread. See exactly what you pay."
+	pd.Description = "uSwap Zero does not add an app fee. See the market maker spread and any NEAR Intents protocol costs before you swap."
 	pd.CanonicalPath = "/fees"
 	pd.StructuredData = feesSchema
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -1171,9 +1049,7 @@ func handleRobotsTxt(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write([]byte("User-agent: *\n" +
 		"Allow: /\n" +
-		"Disallow: /api/\n" +
 		"Disallow: /tg/\n" +
-		"Disallow: /wrapper-logs\n" +
 		"Disallow: /order/\n" +
 		"Disallow: /quote\n" +
 		"Disallow: /swap\n" +
@@ -1203,14 +1079,14 @@ func handleLLMSTxt(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write([]byte("# uSwap Zero\n" +
 		"\n" +
-		"> Zero-fee, zero-tracking, open-source crypto swap frontend.\n" +
+		"> No app fee, zero-tracking, open-source crypto swap frontend.\n" +
 		"\n" +
 		"uSwap Zero lets you swap 140+ cryptocurrencies across 29+ blockchains\n" +
-		"with no fees, no tracking, and no hidden markup. Powered by NEAR Intents protocol.\n" +
+		"with no uSwap app fee, no tracking, and no application JavaScript. Powered by NEAR Intents protocol.\n" +
 		"\n" +
 		"## Key Facts\n" +
 		"\n" +
-		"- Zero fees: no markup, no commissions, no hidden charges\n" +
+		"- No uSwap app fee: quote requests send appFees as an empty array\n" +
 		"- Zero tracking: no analytics, no cookies, no JavaScript tracking\n" +
 		"- Open source: MIT License, single Go binary, zero external dependencies\n" +
 		"- Non-custodial: funds go directly through NEAR Intents protocol\n" +
@@ -1221,8 +1097,8 @@ func handleLLMSTxt(w http.ResponseWriter, r *http.Request) {
 		"- [Home](https://zero.uswap.net/): Swap form for 140+ tokens\n" +
 		"- [Currencies](https://zero.uswap.net/currencies): Full list of supported tokens and networks\n" +
 		"- [How It Works](https://zero.uswap.net/how-it-works): Step-by-step swap process\n" +
-		"- [Fees](https://zero.uswap.net/fees): Fee transparency — we charge nothing\n" +
-		"- [Case Study](https://zero.uswap.net/case-study): On-chain evidence of hidden fees in competitor swap services\n" +
+		"- [Fees](https://zero.uswap.net/fees): Fee transparency and quote cost breakdown\n" +
+		"- [Case Study](https://zero.uswap.net/case-study): Fee-transparency comparison using public NEAR Intents data\n" +
 		"- [FAQ](https://zero.uswap.net/faq): Common questions about swaps, fees, privacy, and security\n" +
 		"- [Verify](https://zero.uswap.net/verify): Deployment verification and build metadata\n" +
 		"- [Privacy Policy](https://zero.uswap.net/privacy): No KYC, no data collection, no tracking\n" +

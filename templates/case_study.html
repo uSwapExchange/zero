@@ -4,16 +4,16 @@
   <a href="/" class="back-link">&larr; Start Swapping</a>
 
   <div class="article-header">
-    <h1>The Crypto Swap Reseller Problem</h1>
-    <p>Swap.my, LizardSwap, and EagleSwap charge you 0.30–0.72% to resell a free protocol. Here's the proof — pulled directly from the NEAR blockchain.</p>
+    <h1>Swap Fee Transparency</h1>
+    <p>A comparison of app-level swap fees using public NEAR Intents transaction data.</p>
   </div>
 
-  <!-- The Scheme -->
+  <!-- Background -->
   <div class="article-section">
-    <h2>The Scheme</h2>
-    <p>NEAR Intents is a cross-chain swap protocol. It aggregates liquidity from competing market makers and executes swaps across 20+ blockchains. The protocol is free — zero fees for registered partners. The API is publicly documented at <code>docs.near-intents.org</code>.</p>
-    <p>Swap.my, LizardSwap, and EagleSwap are frontends built on this free API. They present themselves as independent exchanges. They are not. They take the NEAR Intents rate, add a markup, and pocket the difference. LizardSwap and EagleSwap disclose their fees. Swap.my does not — its fee is hidden inside the exchange rate, and it actively obscures the underlying provider.</p>
-    <p>Every transaction is recorded on the NEAR blockchain with the fee amount and recipient baked into the <code>appFees</code> field. We pulled it all. Here's what we found.</p>
+    <h2>Background</h2>
+    <p>NEAR Intents is a cross-chain swap protocol. It aggregates liquidity from competing market makers and executes swaps across 20+ blockchains. For registered partners, app-level fees are represented explicitly in the quote request and resulting transaction data.</p>
+    <p>Several public swap frontends use NEAR Intents infrastructure while applying their own app fee. Some disclose that fee directly; others expose it only through the effective exchange rate or public transaction metadata.</p>
+    <p>The numbers below come from the public <code>appFees</code> fields for the listed fee recipients. uSwap Zero sends quote requests with <code>appFees: []</code>.</p>
   </div>
 
   <!-- SwapMy -->
@@ -31,11 +31,11 @@
       </div>
       <div class="stat-card stat-card--accent">
         <div class="stat-card__value">{{.SwapMy.TotalRevenue}}</div>
-        <div class="stat-card__label">Profit from Users</div>
+        <div class="stat-card__label">App Fees Collected</div>
       </div>
       <div class="stat-card">
         <div class="stat-card__value">0.72%</div>
-        <div class="stat-card__label">Hidden Fee (72 bps)</div>
+        <div class="stat-card__label">App Fee (72 bps)</div>
       </div>
     </div>
 
@@ -45,7 +45,7 @@
   "recipient": "swapmybuddy.near",
   "fee": 72
 }]</code></pre>
-      <p class="evidence-block__caption">Every Swap.my transaction contains this fee entry. 72 basis points (0.72%) — more than double the markup charged by LizardSwap and EagleSwap. The NEAR account name <code>swapmybuddy.near</code> makes attribution unambiguous.</p>
+      <p class="evidence-block__caption">The sampled Swap.my transactions contain this fee entry. 72 basis points equals 0.72% of the swap input value.</p>
     </div>
 
     <table class="comparison-table">
@@ -59,19 +59,17 @@
         <tr><td>Days Active</td><td>{{.SwapMy.DaysActive}} days</td></tr>
         <tr><td>Total Swaps</td><td>{{.SwapMy.TotalSwaps}}</td></tr>
         <tr><td>Total Volume</td><td>{{.SwapMy.TotalVolume}}</td></tr>
-        <tr><td>Total Revenue</td><td>{{.SwapMy.TotalRevenue}}</td></tr>
+        <tr><td>App Fees Collected</td><td>{{.SwapMy.TotalRevenue}}</td></tr>
         <tr><td>Daily Revenue</td><td>{{.SwapMy.DailyRevenue}}/day</td></tr>
         <tr><td>Unique Users (senders)</td><td>{{.SwapMy.UniqueSenders}}</td></tr>
         <tr><td>Largest Single Swap</td><td>{{.SwapMy.BiggestUSD}}</td></tr>
         <tr><td>Referral Tag</td><td>None set (no attribution to NEAR Intents)</td></tr>
-        <tr><td>Provider Field</td><td>Listed as "A" in their API — actively hides the provider name</td></tr>
+        <tr><td>Provider Field</td><td>Listed as "A" in the sampled API response</td></tr>
       </tbody>
     </table>
 
-    <p class="text-muted"><a href="https://raw.githubusercontent.com/uSwapExchange/zero/main/data/swapmy_transactions.json" class="text-accent">View all {{.SwapMy.TotalSwaps}} Swap.my transactions (raw JSON) &rarr;</a></p>
-
     <h3>Quote Discrepancy</h3>
-    <p>In our testing, Swap.my quoted a user <code>0.748856 USDT</code> for a 0.01 SOL swap. The NEAR Intents Explorer shows the solver actually filled <code>0.749848 USDT</code>. The difference is small on a $0.78 swap — but on a $10,000 swap at 72 bps, the user loses $72 to an invisible fee they never agreed to.</p>
+    <p>In one test quote, Swap.my returned <code>0.748856 USDT</code> for a 0.01 SOL swap. The NEAR Intents Explorer showed the solver fill at <code>0.749848 USDT</code>. The difference is small on a sub-dollar swap, but it illustrates where rate-level app fees show up.</p>
   </div>
 
   <!-- LizardSwap -->
@@ -89,7 +87,7 @@
       </div>
       <div class="stat-card stat-card--accent">
         <div class="stat-card__value">{{.Lizard.TotalRevenue}}</div>
-        <div class="stat-card__label">Profit from Users</div>
+        <div class="stat-card__label">App Fees Collected</div>
       </div>
       <div class="stat-card">
         <div class="stat-card__value">0.30%</div>
@@ -103,7 +101,7 @@
   "recipient": "trustswap.near",
   "fee": 30
 }]</code></pre>
-      <p class="evidence-block__caption">Every LizardSwap transaction on the NEAR blockchain contains this fee entry. 30 basis points (0.30%) routed to <code>trustswap.near</code>. Same fee rate as EagleSwap.</p>
+      <p class="evidence-block__caption">The sampled LizardSwap transactions contain this fee entry. 30 basis points equals 0.30% of the swap input value.</p>
     </div>
 
     <table class="comparison-table">
@@ -117,7 +115,7 @@
         <tr><td>Days Active</td><td>{{.Lizard.DaysActive}} days</td></tr>
         <tr><td>Total Swaps</td><td>{{.Lizard.TotalSwaps}}</td></tr>
         <tr><td>Total Volume</td><td>{{.Lizard.TotalVolume}}</td></tr>
-        <tr><td>Total Revenue</td><td>{{.Lizard.TotalRevenue}}</td></tr>
+        <tr><td>App Fees Collected</td><td>{{.Lizard.TotalRevenue}}</td></tr>
         <tr><td>Daily Revenue</td><td>{{.Lizard.DailyRevenue}}/day</td></tr>
         <tr><td>Unique Users (senders)</td><td>{{.Lizard.UniqueSenders}}</td></tr>
         <tr><td>Largest Single Swap</td><td>{{.Lizard.BiggestUSD}}</td></tr>
@@ -125,7 +123,6 @@
       </tbody>
     </table>
 
-    <p class="text-muted"><a href="https://raw.githubusercontent.com/uSwapExchange/zero/main/data/lizardswap_transactions.json" class="text-accent">View all {{.Lizard.TotalSwaps}} LizardSwap transactions (raw JSON) &rarr;</a></p>
   </div>
 
   <!-- EagleSwap -->
@@ -143,7 +140,7 @@
       </div>
       <div class="stat-card stat-card--accent">
         <div class="stat-card__value">{{.Eagle.TotalRevenue}}</div>
-        <div class="stat-card__label">Profit from Users</div>
+        <div class="stat-card__label">App Fees Collected</div>
       </div>
       <div class="stat-card">
         <div class="stat-card__value">0.30%</div>
@@ -157,7 +154,7 @@
   "recipient": "Gcj5A3a5mF2BEPm4LujddTit7tTR8pNmUKXkcuzM4dC1",
   "fee": 30
 }]</code></pre>
-      <p class="evidence-block__caption">Every EagleSwap transaction on the NEAR blockchain contains this fee entry. 30 basis points (0.30%) routed to a Solana address they control. Verify any transaction at <a href="https://explorer.near-intents.org" class="text-accent">explorer.near-intents.org</a>.</p>
+      <p class="evidence-block__caption">The sampled EagleSwap transactions contain this fee entry. 30 basis points equals 0.30% of the swap input value. Transactions can be checked at <a href="https://explorer.near-intents.org" class="text-accent">explorer.near-intents.org</a>.</p>
     </div>
 
     <table class="comparison-table">
@@ -171,7 +168,7 @@
         <tr><td>Days Active</td><td>{{.Eagle.DaysActive}} days</td></tr>
         <tr><td>Total Swaps</td><td>{{.Eagle.TotalSwaps}}</td></tr>
         <tr><td>Total Volume</td><td>{{.Eagle.TotalVolume}}</td></tr>
-        <tr><td>Total Revenue</td><td>{{.Eagle.TotalRevenue}}</td></tr>
+        <tr><td>App Fees Collected</td><td>{{.Eagle.TotalRevenue}}</td></tr>
         <tr><td>Daily Revenue</td><td>{{.Eagle.DailyRevenue}}/day</td></tr>
         <tr><td>Unique Users (senders)</td><td>{{.Eagle.UniqueSenders}}</td></tr>
         <tr><td>Largest Single Swap</td><td>{{.Eagle.BiggestUSD}}</td></tr>
@@ -179,17 +176,15 @@
       </tbody>
     </table>
 
-    <p class="text-muted"><a href="https://raw.githubusercontent.com/uSwapExchange/zero/main/data/eagleswap_transactions.json" class="text-accent">View all {{.Eagle.TotalSwaps}} EagleSwap transactions (raw JSON) &rarr;</a></p>
-
-    <h3>Security Issues</h3>
-    <p>EagleSwap exposes an unauthenticated API at <code>/api/swap/{id}</code> that leaks:</p>
+    <h3>Public API Exposure</h3>
+    <p>EagleSwap exposes an unauthenticated API at <code>/api/swap/{id}</code> that returns:</p>
     <ul>
       <li>Full NEAR Intents quote responses including solver signatures</li>
       <li>User wallet addresses (both recipient and refund)</li>
       <li>Deposit addresses and correlation IDs</li>
       <li>Recent swap feed at <code>/api/swaps</code> — no authentication required</li>
     </ul>
-    <p>Any user's swap can be looked up by anyone who knows the order ID. This is how we identified their fee structure without any privileged access.</p>
+    <p>Any user's swap can be looked up by anyone who knows the order ID. This is how the fee structure was identified without privileged access.</p>
   </div>
 
   <!-- Side by Side -->
@@ -228,7 +223,7 @@
           <td class="highlight">0%</td>
         </tr>
         <tr>
-          <td>App Fee (markup)</td>
+          <td>App Fee</td>
           <td>0.72%</td>
           <td>0.30%</td>
           <td>0.30%</td>
@@ -236,7 +231,7 @@
         </tr>
         <tr>
           <td>Fee Disclosure</td>
-          <td>Hidden in rate</td>
+          <td>Rate-level</td>
           <td>Disclosed</td>
           <td>Disclosed</td>
           <td class="highlight">$0.00 shown explicitly</td>
@@ -266,7 +261,7 @@
           <td>User Data Stored</td>
           <td>Unknown</td>
           <td>Unknown</td>
-          <td>Yes (leaks via API)</td>
+          <td>Yes (available via API)</td>
           <td class="highlight">Nothing. Zero state.</td>
         </tr>
         <tr>
@@ -311,7 +306,7 @@
       </div>
       <div class="stat-card stat-card--large stat-card--accent">
         <div class="stat-card__value">{{.Combined.TotalRevenue}}</div>
-        <div class="stat-card__label">Total Profit from Users</div>
+        <div class="stat-card__label">Total App Fees Collected</div>
       </div>
       <div class="stat-card stat-card--large">
         <div class="stat-card__value">{{.Combined.TotalSwaps}}</div>
@@ -322,18 +317,18 @@
         <div class="stat-card__label">Unique Users Affected</div>
       </div>
     </div>
-    <p>Every dollar above was charged for adding a frontend to a free API. The users received no additional value — the same swap, the same speed, the same liquidity. Just a worse rate.</p>
+    <p>The total above is the app-fee component visible in public NEAR Intents transaction data for the sampled fee recipients.</p>
   </div>
 
   <!-- How We Found This -->
   <div class="article-section">
     <h2>How We Found This</h2>
-    <p>No hacking. No private data. No insider access. Just public blockchain records.</p>
+    <p>No private access is required. The methodology uses public transaction records and public API responses.</p>
     <ol>
-      <li><strong>Identified the protocol:</strong> All three services use <code>nep141:</code> asset IDs, <code>ed25519</code> signatures, and deposit addresses that resolve on NEAR — all signatures of the NEAR Intents 1Click API.</li>
-      <li><strong>Found the fee wallets:</strong> EagleSwap's API is unauthenticated — their <code>/api/swaps</code> endpoint returns recent swaps with correlation IDs. We matched those to the NEAR Intents Explorer, which shows the <code>appFees</code> field on every transaction.</li>
-      <li><strong>Pulled the full history:</strong> The NEAR Intents Explorer API supports filtering by <code>affiliate</code> — the fee recipient address. One query returns every swap that paid fees to that address, with full TX hashes on both the source and destination chains.</li>
-      <li><strong>Verified independently:</strong> Every transaction hash in this report is clickable and verifiable on the respective blockchain's explorer. The origin chain TX shows the user's deposit. The destination chain TX shows what they received. The NEAR TX shows the fee that was extracted.</li>
+      <li><strong>Identified the protocol:</strong> The services use NEAR Intents-style asset IDs, signatures, and deposit flows.</li>
+      <li><strong>Identified fee recipients:</strong> Public transaction data shows app-fee recipients in the <code>appFees</code> field.</li>
+      <li><strong>Queried by affiliate:</strong> The NEAR Intents Explorer API supports filtering by <code>affiliate</code>, which is the fee recipient address.</li>
+      <li><strong>Summarized the results:</strong> The displayed totals are generated from the compact summary JSON embedded in this repository.</li>
     </ol>
 
     <div class="evidence-block">
@@ -354,31 +349,27 @@ curl -H "Authorization: Bearer YOUR_JWT" \
 affiliate=swapmybuddy.near&perPage=10"
 
 # Get an Explorer API key at: partners.near-intents.org</code></pre>
-      <p class="evidence-block__caption">Returns full transaction details: TX hashes, sender/recipient wallets, amounts, fees, timestamps. All public data.</p>
+      <p class="evidence-block__caption">Returns transaction details including hashes, amounts, fee fields, and timestamps.</p>
     </div>
 
     <div class="evidence-block">
-      <div class="evidence-block__title">Raw Data</div>
-      <p>Every transaction referenced in this report is included in our repository as raw JSON:</p>
+      <div class="evidence-block__title">Summary Data</div>
+      <p>The repository keeps only the compact summary used to render this page. Raw transaction exports are intentionally not checked in; they can be regenerated from the Explorer API queries above.</p>
       <ul>
-        <li><a href="https://raw.githubusercontent.com/uSwapExchange/zero/main/data/eagleswap_transactions.json" class="text-accent">eagleswap_transactions.json</a> — {{.Eagle.TotalSwaps}} EagleSwap transactions</li>
-        <li><a href="https://raw.githubusercontent.com/uSwapExchange/zero/main/data/lizardswap_transactions.json" class="text-accent">lizardswap_transactions.json</a> — {{.Lizard.TotalSwaps}} LizardSwap transactions</li>
-        <li><a href="https://raw.githubusercontent.com/uSwapExchange/zero/main/data/swapmy_transactions.json" class="text-accent">swapmy_transactions.json</a> — {{.SwapMy.TotalSwaps}} Swap.my transactions</li>
-        <li><a href="https://raw.githubusercontent.com/uSwapExchange/zero/main/data/near_intents_reseller_analysis.json" class="text-accent">near_intents_reseller_analysis.json</a> — Summary statistics</li>
+        <li><a href="https://raw.githubusercontent.com/uSwapExchange/zero/main/data/near_intents_fee_analysis.json" class="text-accent">near_intents_fee_analysis.json</a> — Summary statistics</li>
       </ul>
     </div>
   </div>
 
   <!-- The Point -->
   <div class="article-section">
-    <h2>The Point</h2>
-    <p>We're not saying Swap.my, LizardSwap, and EagleSwap are scams. They provide a service — a frontend for a swap protocol. Charging for that is a legitimate business model.</p>
-    <p>The problem is that none of them disclose the underlying provider, and Swap.my actively hides its fee inside the rate. All three charge for wrapping a free API — and none tell you that the same swap costs nothing elsewhere.</p>
-    <p>uSwap Zero exists to prove that a swap frontend can be free, open source, privacy-first, and fully transparent — while using the exact same infrastructure. You shouldn't have to pay 0.30–0.72% to swap crypto. And you shouldn't have to trust us when we say that. Read the code.</p>
+    <h2>Why This Matters</h2>
+    <p>App fees are a valid business model when they are clear to users. This comparison exists to make the fee surface easy to inspect.</p>
+    <p>uSwap Zero takes a different approach: it is open source, server-rendered, privacy-first, and sends quote requests without an app-fee recipient.</p>
   </div>
 
   <div class="text-center mt-32">
-    <a href="/" class="btn btn--primary">&larr; Start Swapping at 0% Fee</a>
+    <a href="/" class="btn btn--primary">&larr; Start Swapping</a>
     <a href="/verify" class="btn btn--outline">Verify Our Code &rarr;</a>
   </div>
 

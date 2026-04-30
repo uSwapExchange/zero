@@ -1,26 +1,26 @@
 # uSwap Zero
 
-Zero-fee, zero-tracking, open-source crypto swap frontend powered by [NEAR Intents](https://near.org/intents).
+No app fee, zero-tracking, open-source crypto swap frontend powered by [NEAR Intents](https://near.org/intents).
 
 **Live:** [zero.uswap.net](https://zero.uswap.net)
 
 ## What is this?
 
-A single Go binary (~4000 lines, zero dependencies) that lets you swap 140+ tokens across 29 blockchains — via web or Telegram bot. No account needed. No JavaScript analytics. No cookies. No server-side logging of user data.
+A single Go binary with zero external dependencies that lets you swap 140+ tokens across 29 blockchains — via web or Telegram bot. No account needed. No JavaScript analytics. No cookies. No server-side logging of user data.
 
-uSwap Zero passes the NEAR Intents exchange rate through at cost — no markup, no hidden fees. Every swap is verifiable against the public NEAR Intents API.
+uSwap Zero passes NEAR Intents quotes through without adding an app fee. Every swap is verifiable against the public NEAR Intents API.
 
 ## Why?
 
-Most "zero-fee" swap services are resellers. They use the NEAR Intents API, add 1-5% to the rate, and pocket the difference. The user never sees the pre-markup price.
+The project is meant to be a small, auditable reference frontend for NEAR Intents swaps. It keeps the operational surface narrow: server-rendered HTML, an optional Telegram bot, no database, no analytics, and no client-side application JavaScript.
 
 uSwap Zero is different:
-- **Zero markup** — the API call passes amounts through untouched
+- **No app fee** — quote requests send `appFees: []`
 - **Open source** — read every line of code that handles your swap
 - **Verifiable deployment** — the running binary's commit hash, build log, and image digest are public at `/verify`
 - **No tracking** — no analytics, no cookies, no IP logging, no session storage
 
-See the full analysis at [/case-study](https://zero.uswap.net/case-study).
+See [/case-study](https://zero.uswap.net/case-study) for a fee-transparency comparison using public NEAR Intents data.
 
 ## Tech Stack
 
@@ -45,6 +45,18 @@ ORDER_SECRET=$(openssl rand -hex 32) go run .
 ```
 
 Open http://localhost:3000.
+
+## Download a Release
+
+Tagged releases include precompiled binaries for Linux, macOS, and Windows on amd64 and arm64.
+
+Download the archive for your platform from GitHub Releases, unpack it, then run:
+
+```bash
+ORDER_SECRET=$(openssl rand -hex 32) ./zero
+```
+
+On Windows, set `ORDER_SECRET` to any 64-character hex string before running `zero.exe`.
 
 ## Telegram Bot
 
@@ -74,6 +86,15 @@ go build -ldflags "-s -w \
   -X main.buildLogURL=https://github.com/uSwapExchange/zero/actions/runs/12345" \
   -o zero .
 ```
+
+To publish downloadable binaries, push a version tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release workflow tests the repo, builds platform archives, writes SHA256 checksums, and creates the GitHub Release.
 
 ## Environment Variables
 
@@ -108,8 +129,9 @@ zero/
 ├── tgsession.go      # Per-user session state
 ├── tgswapcard.go     # Swap card builder + inline keyboard
 ├── templates/        # Go html/template files
-├── static/style.css  # Single stylesheet
-├── static/icons/     # 30 bundled SVG crypto icons
+├── static/           # Stylesheet, logo, and favicon assets
+├── data/             # Static case-study data embedded into the binary
+├── tor/              # Optional Tor sidecar image
 └── Dockerfile        # Multi-stage: golang:1.23-alpine -> FROM scratch
 ```
 
@@ -124,7 +146,7 @@ zero/
 | GET | `/order/{token}/raw` | Raw JSON status from NEAR Intents API |
 | GET | `/currencies` | Full searchable token list (140+ tokens, 29 networks) |
 | GET | `/how-it-works` | How the swap process works |
-| GET | `/case-study` | Analysis of swap service reseller markup practices |
+| GET | `/case-study` | Fee-transparency comparison using public NEAR Intents data |
 | GET | `/verify` | Deployment metadata, build verification instructions |
 | GET | `/source` | Redirect to GitHub repository |
 | GET | `/static/*` | Embedded CSS and SVG icons |
@@ -138,7 +160,7 @@ zero/
 
 **How orders work:** When you confirm a swap, the server encrypts the order details (deposit address, amounts, correlation ID) into an AES-256-GCM token. This token is part of the URL (`/order/{token}`). The server decrypts it on each page load to fetch status from NEAR Intents. If the server restarts with a different `ORDER_SECRET`, old order links stop working — the data existed only in the URL.
 
-**What the templates load:** Nothing external. No Google Fonts, no CDN resources, no analytics scripts. The only JavaScript is an 8-line inline clipboard helper with a `<noscript>` fallback.
+**What the templates load:** Nothing external. No Google Fonts, no CDN resources, no analytics scripts, and no application JavaScript.
 
 ## Verify
 
@@ -155,7 +177,7 @@ go build -o zero .
 docker build -t zero .
 ```
 
-Check `nearintents.go` for zero fee markup. Check `handlers.go` for zero logging. Check `go.mod` for zero dependencies.
+Check `nearintents.go` for `appFees: []`. Check `handlers.go` for zero logging. Check `go.mod` for zero dependencies.
 
 ## License
 
