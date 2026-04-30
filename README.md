@@ -46,6 +46,18 @@ ORDER_SECRET=$(openssl rand -hex 32) go run .
 
 Open http://localhost:3000.
 
+## Download a Release
+
+Tagged releases include precompiled binaries for Linux, macOS, and Windows on amd64 and arm64.
+
+Download the archive for your platform from GitHub Releases, unpack it, then run:
+
+```bash
+ORDER_SECRET=$(openssl rand -hex 32) ./zero
+```
+
+On Windows, set `ORDER_SECRET` to any 64-character hex string before running `zero.exe`.
+
 ## Telegram Bot
 
 The bot is optional. When `TG_BOT_TOKEN` and `TG_APP_URL` are set, the server auto-registers a webhook and the bot becomes active. If either is unset, the web interface still works normally.
@@ -74,6 +86,15 @@ go build -ldflags "-s -w \
   -X main.buildLogURL=https://github.com/uSwapExchange/zero/actions/runs/12345" \
   -o zero .
 ```
+
+To publish downloadable binaries, push a version tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release workflow tests the repo, builds platform archives, writes SHA256 checksums, and creates the GitHub Release.
 
 ## Environment Variables
 

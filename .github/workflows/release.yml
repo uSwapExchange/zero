@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  GO_VERSION: '1.23.6'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Verify zero dependencies
+        run: |
+          if grep -q 'require' go.mod; then
+            echo "ERROR: go.mod has external dependencies — this project uses stdlib only"
+            exit 1
+          fi
+
+      - name: Run tests
+        run: go test -short -v ./...
+
+      - name: Build release archives
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          build_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          build_log_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          ldflags="-s -w -X main.commitHash=${GITHUB_SHA} -X main.buildTime=${build_time} -X main.buildLogURL=${build_log_url}"
+
+          mkdir -p build dist
+
+          targets=(
+            "linux amd64"
+            "linux arm64"
+            "darwin amd64"
+            "darwin arm64"
+            "windows amd64"
+            "windows arm64"
+          )
+
+          for target in "${targets[@]}"; do
+            read -r goos goarch <<< "${target}"
+            package="uswap-zero_${tag}_${goos}_${goarch}"
+            out_dir="build/${package}"
+            binary="zero"
+
+            if [ "${goos}" = "windows" ]; then
+              binary="zero.exe"
+            fi
+
+            mkdir -p "${out_dir}"
+            GOOS="${goos}" GOARCH="${goarch}" CGO_ENABLED=0 \
+              go build -trimpath -ldflags "${ldflags}" -o "${out_dir}/${binary}" .
+
+            cp README.md LICENSE "${out_dir}/"
+
+            if [ "${goos}" = "windows" ]; then
+              (cd build && zip -qr "../dist/${package}.zip" "${package}")
+            else
+              tar -C build -czf "dist/${package}.tar.gz" "${package}"
+            fi
+          done
+
+          (cd dist && sha256sum * > SHA256SUMS)
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > release-notes.md <<'EOF'
+          Precompiled uSwap Zero binaries.
+
+          Download the archive for your operating system and CPU, unpack it, set `ORDER_SECRET`, then run `zero` or `zero.exe`.
+
+          The `SHA256SUMS` file contains checksums for all release assets.
+          EOF
+
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --title "uSwap Zero ${GITHUB_REF_NAME}" \
+            --notes-file release-notes.md \
+            --verify-tag
