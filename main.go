@@ -172,10 +172,6 @@ func main() {
 		http.Redirect(w, r, "https://github.com/uSwapExchange/zero", http.StatusFound)
 	})
 
-	// JSON API endpoints (for support bot plugins)
-	mux.HandleFunc("/api/order/", handleAPIOrderLookup)
-	mux.HandleFunc("/api/estimate-time", handleAPIEstimateTime)
-
 	// Telegram bot (optional — disabled if TG_BOT_TOKEN is unset)
 	if initTelegramBot() {
 		mux.HandleFunc("/tg/webhook/"+tgWebhookSecret, handleTelegramWebhook)

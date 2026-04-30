@@ -6,7 +6,7 @@ Zero-fee, zero-tracking, open-source crypto swap frontend powered by [NEAR Inten
 
 ## What is this?
 
-A single Go binary (~4000 lines, zero dependencies) that lets you swap 140+ tokens across 29 blockchains — via web or Telegram bot. No account needed. No JavaScript analytics. No cookies. No server-side logging of user data.
+A single Go binary with zero external dependencies that lets you swap 140+ tokens across 29 blockchains — via web or Telegram bot. No account needed. No JavaScript analytics. No cookies. No server-side logging of user data.
 
 uSwap Zero passes the NEAR Intents exchange rate through at cost — no markup, no hidden fees. Every swap is verifiable against the public NEAR Intents API.
 
@@ -108,8 +108,9 @@ zero/
 ├── tgsession.go      # Per-user session state
 ├── tgswapcard.go     # Swap card builder + inline keyboard
 ├── templates/        # Go html/template files
-├── static/style.css  # Single stylesheet
-├── static/icons/     # 30 bundled SVG crypto icons
+├── static/           # Stylesheet, logo, and favicon assets
+├── data/             # Static case-study data embedded into the binary
+├── tor/              # Optional Tor sidecar image
 └── Dockerfile        # Multi-stage: golang:1.23-alpine -> FROM scratch
 ```
 
