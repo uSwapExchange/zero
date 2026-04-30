@@ -98,7 +98,7 @@ ORDER_SECRET=$(openssl rand -hex 32) ./zero</code></pre>
 
     <div class="audit-item">
       <a href="https://github.com/uSwapExchange/zero/blob/main/nearintents.go" class="audit-item__file">nearintents.go</a>
-      <span class="audit-item__desc">Zero fee markup. The API call passes amounts through untouched. Search for "appFees" — it's an empty array.</span>
+      <span class="audit-item__desc">No uSwap app fee. Search for "appFees" — the quote request sends an empty array.</span>
     </div>
     <div class="audit-item">
       <a href="https://github.com/uSwapExchange/zero/blob/main/handlers.go" class="audit-item__file">handlers.go</a>

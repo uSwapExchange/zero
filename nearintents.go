@@ -93,7 +93,7 @@ type StatusResponse struct {
 	Status        string       `json:"status"`
 	UpdatedAt     string       `json:"updatedAt,omitempty"`
 	SwapDetails   *SwapDetails `json:"swapDetails,omitempty"`
-	// Keep raw JSON for the /raw endpoint
+	// Keep the status response body for the /raw endpoint.
 	RawJSON json.RawMessage `json:"-"`
 }
 

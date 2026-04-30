@@ -20,7 +20,7 @@
   <div class="step-card">
     <div class="step-card__number">2</div>
     <h2 class="step-card__title">Get a Quote</h2>
-    <p class="step-card__desc">Enter your amount and destination address. We request a real-time quote from NEAR Intents and show you exactly what you'll receive, the exchange rate, and a full fee breakdown. The quote is passed through at cost — zero markup.</p>
+    <p class="step-card__desc">Enter your amount and destination address. We request a real-time quote from NEAR Intents and show what you'll receive, the exchange rate, and the fee breakdown. uSwap Zero does not add an app fee.</p>
   </div>
   <div class="step-connector">|</div>
 
@@ -41,12 +41,12 @@
 
   <div class="mt-32"></div>
 
-  <!-- Why Zero Fees? -->
+  <!-- Why No App Fee? -->
   <div class="info-card">
-    <h3 class="info-card__title">Why Zero Fees?</h3>
+    <h3 class="info-card__title">Why No App Fee?</h3>
     <div class="info-card__text">
-      <p>NEAR Intents charges zero protocol fees for swaps. Most "free" swap services are resellers who silently add 1-5% markup to the rate you see. uSwap Zero passes the NEAR Intents rate through with exactly zero markup, zero commission, zero hidden fees.</p>
-      <p>The only cost is the market maker's spread — the difference between the spot price and the rate they offer. This spread exists on every exchange and DEX. We just don't add anything on top of it.</p>
+      <p>NEAR Intents quote requests can include app-level fees. uSwap Zero sends those requests with <code>appFees: []</code>, so this frontend does not add its own fee or commission.</p>
+      <p>The remaining cost is the market maker's spread — the difference between the spot price and the rate they offer. Protocol or network costs may also apply when surfaced by NEAR Intents.</p>
     </div>
   </div>
 

@@ -1,6 +1,6 @@
 # uSwap Zero
 
-Zero-fee, zero-tracking, open-source crypto swap frontend powered by [NEAR Intents](https://near.org/intents).
+No app fee, zero-tracking, open-source crypto swap frontend powered by [NEAR Intents](https://near.org/intents).
 
 **Live:** [zero.uswap.net](https://zero.uswap.net)
 
@@ -8,19 +8,19 @@ Zero-fee, zero-tracking, open-source crypto swap frontend powered by [NEAR Inten
 
 A single Go binary with zero external dependencies that lets you swap 140+ tokens across 29 blockchains — via web or Telegram bot. No account needed. No JavaScript analytics. No cookies. No server-side logging of user data.
 
-uSwap Zero passes the NEAR Intents exchange rate through at cost — no markup, no hidden fees. Every swap is verifiable against the public NEAR Intents API.
+uSwap Zero passes NEAR Intents quotes through without adding an app fee. Every swap is verifiable against the public NEAR Intents API.
 
 ## Why?
 
-Most "zero-fee" swap services are resellers. They use the NEAR Intents API, add 1-5% to the rate, and pocket the difference. The user never sees the pre-markup price.
+The project is meant to be a small, auditable reference frontend for NEAR Intents swaps. It keeps the operational surface narrow: server-rendered HTML, an optional Telegram bot, no database, no analytics, and no client-side application JavaScript.
 
 uSwap Zero is different:
-- **Zero markup** — the API call passes amounts through untouched
+- **No app fee** — quote requests send `appFees: []`
 - **Open source** — read every line of code that handles your swap
 - **Verifiable deployment** — the running binary's commit hash, build log, and image digest are public at `/verify`
 - **No tracking** — no analytics, no cookies, no IP logging, no session storage
 
-See the full analysis at [/case-study](https://zero.uswap.net/case-study).
+See [/case-study](https://zero.uswap.net/case-study) for a fee-transparency comparison using public NEAR Intents data.
 
 ## Tech Stack
 
@@ -146,7 +146,7 @@ zero/
 | GET | `/order/{token}/raw` | Raw JSON status from NEAR Intents API |
 | GET | `/currencies` | Full searchable token list (140+ tokens, 29 networks) |
 | GET | `/how-it-works` | How the swap process works |
-| GET | `/case-study` | Analysis of swap service reseller markup practices |
+| GET | `/case-study` | Fee-transparency comparison using public NEAR Intents data |
 | GET | `/verify` | Deployment metadata, build verification instructions |
 | GET | `/source` | Redirect to GitHub repository |
 | GET | `/static/*` | Embedded CSS and SVG icons |
@@ -177,7 +177,7 @@ go build -o zero .
 docker build -t zero .
 ```
 
-Check `nearintents.go` for zero fee markup. Check `handlers.go` for zero logging. Check `go.mod` for zero dependencies.
+Check `nearintents.go` for `appFees: []`. Check `handlers.go` for zero logging. Check `go.mod` for zero dependencies.
 
 ## License
 

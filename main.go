@@ -34,7 +34,7 @@ var templateFS embed.FS
 //go:embed static/*
 var staticFS embed.FS
 
-//go:embed data/near_intents_reseller_analysis.json
+//go:embed data/near_intents_fee_analysis.json
 var analysisJSON []byte
 
 var templates *template.Template

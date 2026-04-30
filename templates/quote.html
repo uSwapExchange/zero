@@ -52,7 +52,7 @@
       <span class="fee-row__label">Total fees charged</span>
       {{if .HasJWT}}<span class="fee-row__value fee-row__value--free"><span class="fee-zero">Ø</span></span>{{else}}<span class="fee-row__value fee-row__value--free"><span class="fee-zero">Ø</span> (uSwap Zero)</span>{{end}}
     </div>
-    <p class="fee-note">The spread is not a fee — it's the difference between spot price and the market maker's offered rate. uSwap Zero adds zero markup and charges zero fees.{{if not .HasJWT}} Protocol fees may apply at the standard NEAR Intents rate.{{end}}</p>
+    <p class="fee-note">The spread is not a uSwap fee — it's the difference between spot price and the market maker's offered rate.{{if not .HasJWT}} Protocol fees may apply at the standard NEAR Intents rate.{{end}}</p>
   </div>
 
   <!-- Technical Details -->
