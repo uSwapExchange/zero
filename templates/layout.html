@@ -7,7 +7,7 @@
   {{if .NoIndex}}<meta name="robots" content="noindex, nofollow">{{end}}
   {{if .Description}}<meta name="description" content="{{.Description}}">{{end}}
   <title>{{.Title}} — uSwap Zero</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v={{.CommitHash}}">
   <style>:root{--accent:{{.ToColor}};--accent-a:{{.ToColorA}};--amber:{{.FromColor}};--amber-a:{{.FromColorA}}}</style>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
