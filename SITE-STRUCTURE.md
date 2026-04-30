@@ -134,7 +134,6 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /tg/
-Disallow: /wrapper-logs
 Disallow: /order/
 Disallow: /static/
 

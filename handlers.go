@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"html/template"
 	"fmt"
+	"html/template"
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime/debug"
 	"sort"
@@ -60,13 +61,13 @@ func tokenColorPair(ticker string) (string, string) {
 
 // PageData is the base data passed to every template.
 type PageData struct {
-	Title       string
-	Error       string
-	MetaRefresh int // seconds; 0 = no refresh
-	FromColor   string
-	FromColorA  string
-	ToColor     string
-	ToColorA    string
+	Title          string
+	Error          string
+	MetaRefresh    int // seconds; 0 = no refresh
+	FromColor      string
+	FromColorA     string
+	ToColor        string
+	ToColorA       string
 	CommitHash     string
 	BuildTime      string
 	BuildLogURL    string
@@ -112,34 +113,88 @@ type SwapPageData struct {
 	ToToken    *TokenInfo
 }
 
+func firstQueryValue(values url.Values, keys ...string) string {
+	for _, key := range keys {
+		if v := values.Get(key); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func slippageFromValues(values url.Values) string {
+	slippage := strings.TrimSpace(values.Get("slippage"))
+	if slippage == "custom" {
+		return strings.TrimSpace(values.Get("slippage_custom"))
+	}
+	return slippage
+}
+
+func customSlippage(slippage string) bool {
+	switch slippage {
+	case "", "0.5", "1", "2", "3":
+		return false
+	default:
+		return true
+	}
+}
+
+func redirectFlippedSwap(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	params := url.Values{}
+	params.Set("from", r.FormValue("to"))
+	params.Set("from_net", r.FormValue("to_net"))
+	params.Set("to", r.FormValue("from"))
+	params.Set("to_net", r.FormValue("from_net"))
+	if v := strings.TrimSpace(r.FormValue("amount_out")); v != "" {
+		params.Set("amt", v)
+	}
+	if v := strings.TrimSpace(r.FormValue("amount")); v != "" {
+		params.Set("amt_out", v)
+	}
+	if v := strings.TrimSpace(r.FormValue("refund_addr")); v != "" {
+		params.Set("recipient", v)
+	}
+	if v := strings.TrimSpace(r.FormValue("recipient")); v != "" {
+		params.Set("refund_addr", v)
+	}
+	if v := slippageFromValues(r.Form); v != "" {
+		params.Set("slippage", v)
+	}
+	http.Redirect(w, r, "/?"+params.Encode(), http.StatusSeeOther)
+}
+
 // QuotePageData is the data for the quote preview page.
 type QuotePageData struct {
 	PageData
-	From            string
-	FromNet         string
-	FromTicker      string
-	To              string
-	ToNet           string
-	ToTicker        string
-	AmountIn        string
-	AmountInUSD     string
-	AmountOut       string
-	AmountOutUSD    string
-	Rate            string
-	Recipient       string
-	RefundAddr      string
-	Slippage        string
-	SlippageBPS     int
-	CSRFToken       string
-	OriginAsset     string
-	DestAsset       string
-	AtomicAmount    string
-	SpreadUSD       string
-	SpreadPct       string
-	FromToken       *TokenInfo
-	ToToken         *TokenInfo
-	HasJWT          bool   // true if NEAR_INTENTS_JWT is set (0% protocol fee)
-	SwapType        string // FLEX_INPUT or EXACT_OUTPUT
+	From         string
+	FromNet      string
+	FromTicker   string
+	To           string
+	ToNet        string
+	ToTicker     string
+	AmountIn     string
+	AmountInUSD  string
+	AmountOut    string
+	AmountOutUSD string
+	Rate         string
+	Recipient    string
+	RefundAddr   string
+	Slippage     string
+	SlippageBPS  int
+	CSRFToken    string
+	OriginAsset  string
+	DestAsset    string
+	AtomicAmount string
+	SpreadUSD    string
+	SpreadPct    string
+	FromToken    *TokenInfo
+	ToToken      *TokenInfo
+	HasJWT       bool   // true if NEAR_INTENTS_JWT is set (0% protocol fee)
+	SwapType     string // FLEX_INPUT or EXACT_OUTPUT
 }
 
 // OrderPageData is the data for the order status page.
@@ -194,24 +249,30 @@ func handleSwap(w http.ResponseWriter, r *http.Request) {
 		renderError(w, 404, "Not Found", "Page not found.", "Back to Home", "/")
 		return
 	}
+	if r.Method == http.MethodPost && r.URL.Query().Get("flip") != "" {
+		redirectFlippedSwap(w, r)
+		return
+	}
 
 	networks, _ := getNetworkGroups()
+	query := r.URL.Query()
 
 	data := SwapPageData{
 		PageData:   newPageData("uSwap Zero"),
-		From:       r.URL.Query().Get("from"),
-		FromNet:    r.URL.Query().Get("from_net"),
-		To:         r.URL.Query().Get("to"),
-		ToNet:      r.URL.Query().Get("to_net"),
-		Amount:     r.URL.Query().Get("amt"),
-		AmountOut:  r.URL.Query().Get("amt_out"),
-		Recipient:  r.URL.Query().Get("recipient"),
-		Slippage:   r.URL.Query().Get("slippage"),
+		From:       query.Get("from"),
+		FromNet:    query.Get("from_net"),
+		To:         query.Get("to"),
+		ToNet:      query.Get("to_net"),
+		Amount:     firstQueryValue(query, "amt", "amount"),
+		AmountOut:  firstQueryValue(query, "amt_out", "amount_out"),
+		Recipient:  query.Get("recipient"),
+		RefundAddr: query.Get("refund_addr"),
+		Slippage:   slippageFromValues(query),
 		CSRFToken:  generateCSRFToken("quote"),
 		Networks:   networks,
-		SearchFrom: r.URL.Query().Get("search_from"),
-		SearchTo:   r.URL.Query().Get("search_to"),
-		ModalOpen:  r.URL.Query().Get("modal"),
+		SearchFrom: query.Get("search_from"),
+		SearchTo:   query.Get("search_to"),
+		ModalOpen:  query.Get("modal"),
 	}
 
 	// Defaults
@@ -225,6 +286,13 @@ func handleSwap(w http.ResponseWriter, r *http.Request) {
 	}
 	if data.Slippage == "" {
 		data.Slippage = "1"
+	}
+
+	if query.Get("flip") != "" {
+		data.From, data.To = data.To, data.From
+		data.FromNet, data.ToNet = data.ToNet, data.FromNet
+		data.Amount, data.AmountOut = data.AmountOut, data.Amount
+		data.Recipient, data.RefundAddr = data.RefundAddr, data.Recipient
 	}
 
 	// Set accent colors from selected currencies
@@ -283,7 +351,7 @@ func handleQuote(w http.ResponseWriter, r *http.Request) {
 	amountOutForm := r.FormValue("amount_out")
 	recipient := strings.TrimSpace(r.FormValue("recipient"))
 	refundAddr := strings.TrimSpace(r.FormValue("refund_addr"))
-	slippage := r.FormValue("slippage")
+	slippage := slippageFromValues(r.Form)
 
 	// Validation (amount is optional — determines swap type)
 	var errors []string
@@ -470,7 +538,7 @@ func handleSwapConfirm(w http.ResponseWriter, r *http.Request) {
 	toNet := r.FormValue("to_net")
 	atomicAmount := r.FormValue("atomic_amount")
 	userAmountIn := r.FormValue("amount_in")   // user's original input
-	userAmountOut := r.FormValue("amount_out")  // user's original output (EXACT_OUTPUT)
+	userAmountOut := r.FormValue("amount_out") // user's original output (EXACT_OUTPUT)
 	recipient := r.FormValue("recipient")
 	refundAddr := r.FormValue("refund_addr")
 	slippageBPS := r.FormValue("slippage_bps")
@@ -695,14 +763,14 @@ func handleHowItWorks(w http.ResponseWriter, r *http.Request) {
 
 // ResellerStats holds formatted display strings for a single reseller.
 type ResellerStats struct {
-	TotalSwaps   string
-	TotalVolume  string
-	TotalRevenue string
-	FirstTx      string
-	DaysActive   int
-	DailyRevenue string
+	TotalSwaps    string
+	TotalVolume   string
+	TotalRevenue  string
+	FirstTx       string
+	DaysActive    int
+	DailyRevenue  string
 	UniqueSenders string
-	BiggestUSD   string
+	BiggestUSD    string
 }
 
 // CombinedStats holds formatted combined stats.
@@ -733,14 +801,14 @@ type rawAnalysis struct {
 }
 
 type rawReseller struct {
-	TotalSwaps     int     `json:"total_swaps"`
-	TotalVolumeUSD float64 `json:"total_volume_usd"`
+	TotalSwaps      int     `json:"total_swaps"`
+	TotalVolumeUSD  float64 `json:"total_volume_usd"`
 	TotalRevenueUSD float64 `json:"total_revenue_usd"`
-	UniqueSenders  int     `json:"unique_senders"`
-	FirstTx        string  `json:"first_tx"`
-	DaysActive     int     `json:"days_active"`
+	UniqueSenders   int     `json:"unique_senders"`
+	FirstTx         string  `json:"first_tx"`
+	DaysActive      int     `json:"days_active"`
 	DailyRevenueUSD float64 `json:"daily_revenue_usd"`
-	BiggestSwapUSD float64 `json:"biggest_swap_usd"`
+	BiggestSwapUSD  float64 `json:"biggest_swap_usd"`
 }
 
 func formatResellerStats(r rawReseller) ResellerStats {
@@ -794,17 +862,17 @@ func handleCaseStudy(w http.ResponseWriter, r *http.Request) {
 // VerifyPageData is the data for the /verify page.
 type VerifyPageData struct {
 	PageData
-	GoVersion   string
-	Uptime      string
-	Requests    string
-	BinarySize  string
-	EnvVars     []EnvVarStatus
+	GoVersion  string
+	Uptime     string
+	Requests   string
+	BinarySize string
+	EnvVars    []EnvVarStatus
 }
 
 // EnvVarStatus shows whether an env var is configured.
 type EnvVarStatus struct {
-	Key   string
-	Set   bool
+	Key string
+	Set bool
 }
 
 // handleVerify renders the deployment verification page.
@@ -832,10 +900,8 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 
 	// Env var status (key names only — never values)
 	envKeys := []string{
-		"ORDER_SECRET", "NEAR_INTENTS_JWT", "NEAR_INTENTS_EXPLORER_JWT", "NEAR_INTENTS_API_URL", "PORT",
+		"ORDER_SECRET", "NEAR_INTENTS_JWT", "NEAR_INTENTS_API_URL", "PORT",
 		"TG_BOT_TOKEN", "TG_APP_URL", "TG_WEBHOOK_SECRET",
-		"TG_MONITOR_GROUP_ID", "TG_MAIN_CHAT_ID",
-		"TG_SWAPMY_THREAD_ID", "TG_EAGLESWAP_THREAD_ID", "TG_LIZARDSWAP_THREAD_ID",
 	}
 	var envVars []EnvVarStatus
 	for _, k := range envKeys {
@@ -846,12 +912,12 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 	pd.Description = "Verify uSwap Zero's deployment. Compare the live binary against the public source code, build logs, and commit hash."
 	pd.CanonicalPath = "/verify"
 	data := VerifyPageData{
-		PageData:  pd,
-		GoVersion: goVersion,
-		Uptime:    uptime,
-		Requests:  reqs,
+		PageData:   pd,
+		GoVersion:  goVersion,
+		Uptime:     uptime,
+		Requests:   reqs,
 		BinarySize: binSize,
-		EnvVars:   envVars,
+		EnvVars:    envVars,
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	templates.ExecuteTemplate(w, "verify.html", data)
@@ -985,16 +1051,16 @@ func handleAPIEstimateTime(w http.ResponseWriter, r *http.Request) {
 		"eth": 5, "ethereum": 5,
 		"sol": 1, "solana": 1,
 		"base": 3,
-		"arb": 2, "arbitrum": 2,
+		"arb":  2, "arbitrum": 2,
 		"op": 2, "optimism": 2,
 		"pol": 3, "polygon": 3,
 		"avax": 2, "avalanche": 2,
 		"bsc": 2, "bnb chain": 2,
-		"ton": 2,
+		"ton":  2,
 		"tron": 3,
 		"near": 1,
-		"sui": 1,
-		"apt": 2, "aptos": 2,
+		"sui":  1,
+		"apt":  2, "aptos": 2,
 		"doge": 10, "dogecoin": 10,
 		"ltc": 10, "litecoin": 10,
 		"xrp": 1,
@@ -1173,7 +1239,6 @@ func handleRobotsTxt(w http.ResponseWriter, r *http.Request) {
 		"Allow: /\n" +
 		"Disallow: /api/\n" +
 		"Disallow: /tg/\n" +
-		"Disallow: /wrapper-logs\n" +
 		"Disallow: /order/\n" +
 		"Disallow: /quote\n" +
 		"Disallow: /swap\n" +

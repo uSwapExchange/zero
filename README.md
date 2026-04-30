@@ -138,7 +138,7 @@ zero/
 
 **How orders work:** When you confirm a swap, the server encrypts the order details (deposit address, amounts, correlation ID) into an AES-256-GCM token. This token is part of the URL (`/order/{token}`). The server decrypts it on each page load to fetch status from NEAR Intents. If the server restarts with a different `ORDER_SECRET`, old order links stop working — the data existed only in the URL.
 
-**What the templates load:** Nothing external. No Google Fonts, no CDN resources, no analytics scripts. The only JavaScript is an 8-line inline clipboard helper with a `<noscript>` fallback.
+**What the templates load:** Nothing external. No Google Fonts, no CDN resources, no analytics scripts, and no application JavaScript.
 
 ## Verify
 

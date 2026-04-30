@@ -22,25 +22,24 @@ func initNearIntents() {
 		nearIntentsBaseURL = url
 	}
 	nearIntentsJWT = os.Getenv("NEAR_INTENTS_JWT")
-	explorerJWT = os.Getenv("NEAR_INTENTS_EXPLORER_JWT")
 }
 
 // QuoteRequest is the payload for POST /v0/quote
 type QuoteRequest struct {
-	Dry               bool       `json:"dry"`
-	SwapType          string     `json:"swapType"`
-	SlippageTolerance int        `json:"slippageTolerance"`
-	OriginAsset       string     `json:"originAsset"`
-	DepositType       string     `json:"depositType"`
-	DestinationAsset  string     `json:"destinationAsset"`
-	Amount            string     `json:"amount"`
-	RefundTo          string     `json:"refundTo"`
-	RefundType        string     `json:"refundType"`
-	Recipient         string     `json:"recipient"`
-	RecipientType     string     `json:"recipientType"`
-	Deadline          string     `json:"deadline"`
-	QuoteWaitingTimeMs int       `json:"quoteWaitingTimeMs"`
-	AppFees           []struct{} `json:"appFees"`
+	Dry                bool       `json:"dry"`
+	SwapType           string     `json:"swapType"`
+	SlippageTolerance  int        `json:"slippageTolerance"`
+	OriginAsset        string     `json:"originAsset"`
+	DepositType        string     `json:"depositType"`
+	DestinationAsset   string     `json:"destinationAsset"`
+	Amount             string     `json:"amount"`
+	RefundTo           string     `json:"refundTo"`
+	RefundType         string     `json:"refundType"`
+	Recipient          string     `json:"recipient"`
+	RecipientType      string     `json:"recipientType"`
+	Deadline           string     `json:"deadline"`
+	QuoteWaitingTimeMs int        `json:"quoteWaitingTimeMs"`
+	AppFees            []struct{} `json:"appFees"`
 }
 
 // QuoteResponse is the response from POST /v0/quote (real, non-dry quote).
@@ -100,14 +99,14 @@ type StatusResponse struct {
 
 // SwapDetails contains the execution details of a swap.
 type SwapDetails struct {
-	AmountIn        string              `json:"amountIn,omitempty"`
-	AmountInFmt     string              `json:"amountInFormatted,omitempty"`
-	AmountOut       string              `json:"amountOut,omitempty"`
-	AmountOutFmt    string              `json:"amountOutFormatted,omitempty"`
-	OriginTxs       []TransactionDetail `json:"originChainTxHashes,omitempty"`
-	DestTxs         []TransactionDetail `json:"destinationChainTxHashes,omitempty"`
-	RefundedAmount  string              `json:"refundedAmount,omitempty"`
-	RefundReason    string              `json:"refundReason,omitempty"`
+	AmountIn       string              `json:"amountIn,omitempty"`
+	AmountInFmt    string              `json:"amountInFormatted,omitempty"`
+	AmountOut      string              `json:"amountOut,omitempty"`
+	AmountOutFmt   string              `json:"amountOutFormatted,omitempty"`
+	OriginTxs      []TransactionDetail `json:"originChainTxHashes,omitempty"`
+	DestTxs        []TransactionDetail `json:"destinationChainTxHashes,omitempty"`
+	RefundedAmount string              `json:"refundedAmount,omitempty"`
+	RefundReason   string              `json:"refundReason,omitempty"`
 }
 
 // TransactionDetail is a tx hash with an explorer link.
@@ -267,5 +266,3 @@ func fetchStatus(depositAddress, depositMemo string) (*StatusResponse, error) {
 func buildDeadline(d time.Duration) string {
 	return time.Now().UTC().Add(d).Format(time.RFC3339)
 }
-
-
