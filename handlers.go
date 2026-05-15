@@ -71,6 +71,7 @@ type PageData struct {
 	BuildTime      string
 	BuildLogURL    string
 	OnionURL       string
+	TrustpilotURL  string
 	Description    string
 	CanonicalPath  string
 	StructuredData template.HTML
@@ -79,15 +80,16 @@ type PageData struct {
 
 func newPageData(title string) PageData {
 	return PageData{
-		Title:       title,
-		FromColor:   "#ffffff",
-		FromColorA:  "255, 255, 255",
-		ToColor:     "#ffffff",
-		ToColorA:    "255, 255, 255",
-		CommitHash:  commitHash,
-		BuildTime:   buildTime,
-		BuildLogURL: buildLogURL,
-		OnionURL:    onionURL,
+		Title:         title,
+		FromColor:     "#ffffff",
+		FromColorA:    "255, 255, 255",
+		ToColor:       "#ffffff",
+		ToColorA:      "255, 255, 255",
+		CommitHash:    commitHash,
+		BuildTime:     buildTime,
+		BuildLogURL:   buildLogURL,
+		OnionURL:      onionURL,
+		TrustpilotURL: trustpilotURL,
 	}
 }
 

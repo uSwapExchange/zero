@@ -974,3 +974,70 @@ func min(a, b int) int {
 	}
 	return b
 }
+
+// ════════════════════════════════════════════════════════════
+// Trustpilot referral block (order page, SUCCESS state)
+// ════════════════════════════════════════════════════════════
+
+// renderOrderSuccess renders order.html in the SUCCESS state with the
+// given trustpilotURL. Returns the body so tests can assert on the
+// referral block's presence or absence.
+func renderOrderSuccess(t *testing.T, trustpilotURL string) string {
+	t.Helper()
+	pd := newPageData("Order Status")
+	pd.TrustpilotURL = trustpilotURL
+	data := OrderPageData{
+		PageData: pd,
+		Token:    "abc",
+		Order: &OrderData{
+			FromTicker: "BTC", ToTicker: "ETH",
+			AmountIn: "0.01", AmountOut: "0.35",
+		},
+		Status: &StatusResponse{
+			Status:      "SUCCESS",
+			SwapDetails: &SwapDetails{},
+		},
+		StatusStep: 2,
+		IsTerminal: true,
+	}
+	var sb strings.Builder
+	if err := templates.ExecuteTemplate(&sb, "order.html", data); err != nil {
+		t.Fatalf("render order.html: %v", err)
+	}
+	return sb.String()
+}
+
+func TestReferralBlockHiddenWhenEnvUnset(t *testing.T) {
+	body := renderOrderSuccess(t, "")
+	if strings.Contains(body, "referral-card") {
+		t.Error("referral-card should not render when TrustpilotURL is empty")
+	}
+	if strings.Contains(body, "trustpilot.com") {
+		t.Error("trustpilot link should not appear when TrustpilotURL is empty")
+	}
+}
+
+func TestReferralBlockShownWithEnv(t *testing.T) {
+	const url = "https://www.trustpilot.com/evaluate/uswap.net"
+	body := renderOrderSuccess(t, url)
+	if !strings.Contains(body, "referral-card") {
+		t.Error("referral-card should render when TrustpilotURL is set")
+	}
+	if !strings.Contains(body, url) {
+		t.Errorf("expected body to contain %q", url)
+	}
+	// Link must open in a new tab.
+	if !strings.Contains(body, `target="_blank"`) {
+		t.Error("trustpilot link should have target=\"_blank\"")
+	}
+	if !strings.Contains(body, `rel="noopener"`) {
+		t.Error("trustpilot link should have rel=\"noopener\"")
+	}
+	// Copy and link text from the spec.
+	if !strings.Contains(body, "we don't have a marketing budget") {
+		t.Error("expected the marketing-budget tagline in the body")
+	}
+	if !strings.Contains(body, "reviewing us on Trustpilot") {
+		t.Error("expected the 'reviewing us on Trustpilot' link text")
+	}
+}

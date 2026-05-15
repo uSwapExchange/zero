@@ -28,6 +28,13 @@
     {{end}}{{end}}
   </div>
 
+  {{if .TrustpilotURL}}
+  <div class="referral-card">
+    <p class="referral-card__text">Because of uSwap's zero fees, we don't have a marketing budget.</p>
+    <p class="referral-card__text">Help uSwap grow by <a href="{{.TrustpilotURL}}" target="_blank" rel="noopener" class="referral-card__link">reviewing us on Trustpilot</a>, or by telling a friend :)</p>
+  </div>
+  {{end}}
+
   {{else if or (eq .Status.Status "REFUNDED") (eq .Status.Status "FAILED") (eq .Status.Status "INCOMPLETE_DEPOSIT")}}
   <!-- Refund / Error -->
   <div class="refund-card">

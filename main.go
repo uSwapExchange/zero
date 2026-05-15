@@ -28,6 +28,10 @@ var (
 // onionURL is the .onion address for this deployment, set via ONION_URL env var.
 var onionURL = os.Getenv("ONION_URL")
 
+// trustpilotURL is the deployment's Trustpilot review link. When empty the
+// referral block on the completed-swap screen doesn't render at all.
+var trustpilotURL = os.Getenv("TRUSTPILOT_URL")
+
 //go:embed templates/*
 var templateFS embed.FS
 
