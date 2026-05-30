@@ -78,6 +78,23 @@
       {{if .Order.FromNet}}<span>Network <strong>{{.Order.FromNet}}</strong></span>{{end}}
       {{if .TimeRemaining}}<span>Deadline <strong class="{{if eq .TimeRemaining "Expired"}}text-error{{end}}">{{.TimeRemaining}}</strong></span>{{end}}
     </div>
+
+    {{if .Notified}}
+    <p class="notify-note">Tx hash submitted. Awaiting on-chain confirmation&hellip;</p>
+    {{end}}
+
+    <details class="notify-deposit"{{if .NotifyErr}} open{{end}}>
+      <summary>Sent already? Speed up detection</summary>
+      <form method="POST" action="/order/{{.Token}}/notify" class="notify-deposit__form">
+        <input type="hidden" name="csrf" value="{{.NotifyCSRF}}">
+        <input type="text" name="tx_hash" placeholder="Deposit tx hash" class="form-input form-input--mono" autocomplete="off" spellcheck="false">
+        <button type="submit" class="btn btn--ghost btn--sm">Notify</button>
+      </form>
+      {{if .NotifyErr}}<p class="notify-error">{{.NotifyErr}}</p>{{end}}
+      <p class="notify-help">Optional. Submitting the tx hash lets the solver verify the deposit before it confirms on chain.</p>
+    </details>
+
+    <p class="deposit-disclaimer">Sending the wrong asset or amount may result in loss. Use the <a href="https://app.uswap.net" target="_blank" rel="noopener">full version</a> to remove the space for user error.</p>
     {{else}}
     <p class="text-muted pulse">Waiting for confirmation on the network...</p>
     {{end}}

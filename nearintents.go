@@ -266,3 +266,27 @@ func fetchStatus(depositAddress, depositMemo string) (*StatusResponse, error) {
 func buildDeadline(d time.Duration) string {
 	return time.Now().UTC().Add(d).Format(time.RFC3339)
 }
+
+// notifyDeposit POSTs a deposit tx hash to 1Click so the solver can
+// preemptively verify the deposit instead of waiting on blockchain
+// monitoring. Optional — the swap completes either way — but submitting
+// the hash typically advances the swap to KNOWN_DEPOSIT_TX within a few
+// seconds, ahead of native confirmation latency.
+func notifyDeposit(depositAddress, depositMemo, txHash string) (*StatusResponse, error) {
+	body := struct {
+		TxHash         string `json:"txHash"`
+		DepositAddress string `json:"depositAddress"`
+		Memo           string `json:"memo,omitempty"`
+	}{TxHash: txHash, DepositAddress: depositAddress, Memo: depositMemo}
+
+	data, err := nearRequest("POST", "/v0/deposit/submit", body)
+	if err != nil {
+		return nil, err
+	}
+	var resp StatusResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("parse notify response: %w", err)
+	}
+	resp.RawJSON = data
+	return &resp, nil
+}
