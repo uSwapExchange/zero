@@ -208,6 +208,9 @@ type OrderPageData struct {
 	TimeRemaining string
 	IsTerminal    bool
 	StatusStep    int // 0=pending, 1=processing, 2=complete
+	NotifyCSRF    string
+	Notified      bool   // true after a successful POST /order/{token}/notify
+	NotifyErr     string // upstream error from /v0/deposit/submit, surfaced inline
 }
 
 // CurrenciesPageData is the data for the currencies list page.
@@ -619,13 +622,17 @@ func handleSwapConfirm(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/order/"+token, http.StatusFound)
 }
 
-// handleOrder renders the order status page.
+// handleOrder renders the order status page and dispatches the /notify
+// sub-route. Paths: /order/{token}, /order/{token}/raw, /order/{token}/notify.
 func handleOrder(w http.ResponseWriter, r *http.Request) {
-	// Extract token from path: /order/{token} or /order/{token}/raw
 	path := strings.TrimPrefix(r.URL.Path, "/order/")
 	isRaw := strings.HasSuffix(path, "/raw")
-	if isRaw {
+	isNotify := strings.HasSuffix(path, "/notify")
+	switch {
+	case isRaw:
 		path = strings.TrimSuffix(path, "/raw")
+	case isNotify:
+		path = strings.TrimSuffix(path, "/notify")
 	}
 
 	if path == "" {
@@ -636,6 +643,11 @@ func handleOrder(w http.ResponseWriter, r *http.Request) {
 	order, err := decryptOrderData(path)
 	if err != nil {
 		renderError(w, 400, "Invalid Order", "This order link is invalid or expired. It may have been created on a different server.", "Create New Swap", "/")
+		return
+	}
+
+	if isNotify {
+		handleOrderNotify(w, r, path, order)
 		return
 	}
 
@@ -662,7 +674,7 @@ func handleOrder(w http.ResponseWriter, r *http.Request) {
 	switch status.Status {
 	case "PENDING_DEPOSIT":
 		statusStep = 0
-	case "PROCESSING":
+	case "KNOWN_DEPOSIT_TX", "PROCESSING":
 		statusStep = 1
 	case "SUCCESS":
 		statusStep = 2
@@ -711,6 +723,9 @@ func handleOrder(w http.ResponseWriter, r *http.Request) {
 		TimeRemaining: timeRemaining,
 		IsTerminal:    isTerminal,
 		StatusStep:    statusStep,
+		NotifyCSRF:    generateCSRFToken("notify"),
+		Notified:      r.URL.Query().Get("notified") == "1",
+		NotifyErr:     r.URL.Query().Get("notify_err"),
 	}
 	data.MetaRefresh = refresh
 	data.NoIndex = true
@@ -719,6 +734,42 @@ func handleOrder(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	templates.ExecuteTemplate(w, "order.html", data)
+}
+
+// handleOrderNotify forwards a user-submitted deposit tx hash to NEAR
+// Intents' /v0/deposit/submit endpoint. Optional; speeds up detection.
+// Both success and upstream failures redirect back to /order/{token}
+// with a query flag so the template can surface inline state without
+// adding server-side flash storage.
+func handleOrderNotify(w http.ResponseWriter, r *http.Request, token string, order *OrderData) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/order/"+token, http.StatusSeeOther)
+		return
+	}
+	r.ParseForm()
+
+	if !limiter.allow(clientIP(r), 10, time.Minute) {
+		http.Redirect(w, r, "/order/"+token+"?notify_err="+url.QueryEscape("Too many notify attempts. Please wait a minute."), http.StatusSeeOther)
+		return
+	}
+	if !verifyCSRFToken(r.FormValue("csrf"), "notify", time.Hour) {
+		http.Redirect(w, r, "/order/"+token+"?notify_err="+url.QueryEscape("Form expired. Please reload and try again."), http.StatusSeeOther)
+		return
+	}
+
+	txHash := strings.TrimSpace(r.FormValue("tx_hash"))
+	if txHash == "" {
+		http.Redirect(w, r, "/order/"+token+"?notify_err="+url.QueryEscape("Tx hash is required."), http.StatusSeeOther)
+		return
+	}
+
+	// Per the design call, no client-side validation — let 1Click reject
+	// malformed hashes and we surface whatever it says.
+	if _, err := notifyDeposit(order.DepositAddr, order.Memo, txHash); err != nil {
+		http.Redirect(w, r, "/order/"+token+"?notify_err="+url.QueryEscape(err.Error()), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/order/"+token+"?notified=1", http.StatusSeeOther)
 }
 
 // handleCurrencies renders the full currency list.

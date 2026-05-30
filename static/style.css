@@ -893,6 +893,87 @@ details.tech-details[open] summary::before { content: '▾ '; }
 }
 .deposit-meta span { display: flex; justify-content: space-between; }
 
+.deposit-disclaimer {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  opacity: 0.55;
+  text-align: center;
+}
+.deposit-disclaimer a {
+  color: var(--accent);
+  border-bottom: 1px dotted rgba(var(--accent-a),0.45);
+  transition: opacity 140ms;
+}
+.deposit-disclaimer a:hover { opacity: 0.8; }
+
+/* ── Notify Deposit (collapsible "Sent already?" form) ── */
+.notify-note {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(52,237,122,0.10);
+  border: 1px solid rgba(52,237,122,0.28);
+  color: rgba(196,255,217,0.92);
+  font-size: 0.75rem;
+  text-align: center;
+}
+.notify-deposit {
+  margin-top: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.notify-deposit > summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.75;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.notify-deposit > summary::-webkit-details-marker { display: none; }
+.notify-deposit > summary::before {
+  content: '+';
+  display: inline-block;
+  width: 12px;
+  text-align: center;
+  opacity: 0.55;
+  font-weight: 400;
+}
+.notify-deposit[open] > summary::before { content: '−'; }
+.notify-deposit__form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.notify-deposit__form .form-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.78rem;
+}
+.notify-deposit__form .btn { flex-shrink: 0; }
+.notify-help {
+  margin-top: 8px;
+  font-size: 0.70rem;
+  opacity: 0.45;
+  line-height: 1.5;
+}
+.notify-error {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255,107,107,0.10);
+  border: 1px solid rgba(255,107,107,0.30);
+  color: #fda5a5;
+  font-size: 0.74rem;
+  word-break: break-word;
+}
+
 .qr-container {
   display: flex;
   justify-content: center;
