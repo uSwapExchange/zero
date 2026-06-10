@@ -422,7 +422,6 @@ func handleQuote(w http.ResponseWriter, r *http.Request) {
 		RecipientType:      "DESTINATION_CHAIN",
 		Deadline:           buildDeadline(time.Hour),
 		QuoteWaitingTimeMs: 8000,
-		Referral:           nearIntentsReferral,
 		AppFees:            []struct{}{},
 	}
 
@@ -577,7 +576,6 @@ func handleSwapConfirm(w http.ResponseWriter, r *http.Request) {
 		RecipientType:      "DESTINATION_CHAIN",
 		Deadline:           buildDeadline(time.Hour),
 		QuoteWaitingTimeMs: 8000,
-		Referral:           nearIntentsReferral,
 		AppFees:            []struct{}{},
 	}
 

@@ -12,10 +12,9 @@ import (
 )
 
 var (
-	nearIntentsBaseURL  = "https://1click.chaindefuser.com"
-	nearIntentsJWT      string
-	nearIntentsReferral string
-	nearHTTPClient      = &http.Client{Timeout: 30 * time.Second}
+	nearIntentsBaseURL = "https://1click.chaindefuser.com"
+	nearIntentsJWT     string
+	nearHTTPClient     = &http.Client{Timeout: 30 * time.Second}
 )
 
 func initNearIntents() {
@@ -23,7 +22,6 @@ func initNearIntents() {
 		nearIntentsBaseURL = url
 	}
 	nearIntentsJWT = os.Getenv("NEAR_INTENTS_JWT")
-	nearIntentsReferral = os.Getenv("NEAR_INTENTS_REFERRAL")
 }
 
 // QuoteRequest is the payload for POST /v0/quote
@@ -41,7 +39,6 @@ type QuoteRequest struct {
 	RecipientType      string     `json:"recipientType"`
 	Deadline           string     `json:"deadline"`
 	QuoteWaitingTimeMs int        `json:"quoteWaitingTimeMs"`
-	Referral           string     `json:"referral,omitempty"`
 	AppFees            []struct{} `json:"appFees"`
 }
 
