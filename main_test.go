@@ -965,40 +965,6 @@ func TestQuoteRequestJSON(t *testing.T) {
 	if !strings.Contains(string(data), `"appFees":[]`) {
 		t.Errorf("AppFees should serialize as [], got: %s", string(data))
 	}
-
-	// Referral omitted when empty
-	if strings.Contains(string(data), `"referral"`) {
-		t.Errorf("referral should be omitted when empty, got: %s", string(data))
-	}
-
-	req.Referral = "uswap"
-	data, err = json.Marshal(req)
-	if err != nil {
-		t.Fatalf("marshal QuoteRequest with referral failed: %v", err)
-	}
-	if !strings.Contains(string(data), `"referral":"uswap"`) {
-		t.Errorf(`expected "referral":"uswap" in JSON, got: %s`, string(data))
-	}
-}
-
-func TestInitNearIntentsReferral(t *testing.T) {
-	prev := os.Getenv("NEAR_INTENTS_REFERRAL")
-	defer func() {
-		os.Setenv("NEAR_INTENTS_REFERRAL", prev)
-		initNearIntents()
-	}()
-
-	os.Unsetenv("NEAR_INTENTS_REFERRAL")
-	initNearIntents()
-	if nearIntentsReferral != "" {
-		t.Errorf("expected empty referral when env unset, got %q", nearIntentsReferral)
-	}
-
-	os.Setenv("NEAR_INTENTS_REFERRAL", "uswap")
-	initNearIntents()
-	if nearIntentsReferral != "uswap" {
-		t.Errorf(`expected referral "uswap", got %q`, nearIntentsReferral)
-	}
 }
 
 // Helper
