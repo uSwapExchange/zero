@@ -46,4 +46,18 @@ HiddenServiceDir /var/lib/tor/hidden_service
 HiddenServicePort 80 ${BACKEND_IP}:${BACKEND_PORT}
 EOF
 
-exec tor -f /etc/tor/torrc
+# Launch tor, then run a re-resolve watchdog: Docker assigns the backend a new IP
+# on every redeploy, and tor bakes the HiddenServicePort IP at boot — without this,
+# a Zero redeploy silently points the onion at a dead IP (2026-07-09 incident).
+tor -f /etc/tor/torrc &
+TOR_PID=$!
+while kill -0 "$TOR_PID" 2>/dev/null; do
+    sleep 30
+    NEW_IP=$(getent hosts "$BACKEND_HOST" 2>/dev/null | awk '{print $1; exit}')
+    if [ -n "$NEW_IP" ] && [ "$NEW_IP" != "$BACKEND_IP" ]; then
+        echo "Tor: backend IP changed ${BACKEND_IP} -> ${NEW_IP}; rewriting torrc + reloading"
+        BACKEND_IP="$NEW_IP"
+        sed -i "s|^HiddenServicePort 80 .*|HiddenServicePort 80 ${BACKEND_IP}:${BACKEND_PORT}|" /etc/tor/torrc
+        kill -HUP "$TOR_PID"
+    fi
+done
